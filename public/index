@@ -1,0 +1,5814 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>บันทึกคะแนนความประพฤติ</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Font : Sarabun -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- SheetJS สำหรับ Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+  <!-- html2canvas + jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    * {
+      font-family: 'Sarabun', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 50%, #ecfeff 100%);
+      min-height: 100vh;
+    }
+
+    .glass {
+      background: rgba(255,255,255,.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,.6);
+    }
+
+    .card {
+      box-shadow: 0 10px 35px rgba(15, 23, 42, 0.08);
+    }
+
+    .gradient-btn {
+      background: linear-gradient(135deg, #4f46e5, #06b6d4);
+    }
+
+    .gradient-danger {
+      background: linear-gradient(135deg, #ef4444, #f97316);
+    }
+
+    .gradient-success {
+      background: linear-gradient(135deg, #10b981, #22c55e);
+    }
+
+    .scroll-area {
+      max-height: 420px;
+      overflow-y: auto;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .status-online {
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34,197,94,.15);
+    }
+
+    .status-offline {
+      background: #ef4444;
+      box-shadow: 0 0 0 4px rgba(239,68,68,.15);
+    }
+
+    .status-loading {
+      background: #f59e0b;
+      box-shadow: 0 0 0 4px rgba(245,158,11,.15);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* เมนูหลักแบบแยกหน้า (ไม่เปลี่ยนส่วนเข้าสู่ระบบและข้อมูลเดิม) */
+    [data-app-page] { display: none !important; }
+    [data-app-page].app-page-active { display: block !important; }
+    [data-app-page="home"].app-page-active { display: grid !important; }
+    [data-app-page="home"].app-page-active.grid { display: grid !important; }
+    #mainMenu:not(.app-page-active) { display: none !important; }
+    #mainMenu.app-page-active { display: block !important; }
+    #pageNavigator:not(.app-page-active) { display: none !important; }
+    #pageNavigator.app-page-active { display: flex !important; }
+    #adminSection.hidden { display: none !important; }
+    #appPage [data-home-initial].teacher-home-hidden { display: none !important; }
+    .main-menu-tile { transition: transform .18s ease, box-shadow .18s ease; }
+    .main-menu-tile:hover { transform: translateY(-3px); box-shadow: 0 14px 32px rgba(15,23,42,.13); }
+    .main-menu-tile:focus-visible { outline: 3px solid #4f46e5; outline-offset: 3px; }
+  </style>
+</head>
+
+<body class="text-slate-800">
+
+  <!-- ================= LOGIN ================= -->
+  <div id="loginPage" class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="glass card rounded-3xl p-8 w-full max-w-md">
+
+      <div class="text-center mb-8">
+<img
+  src="https://drive.google.com/thumbnail?id=1u8P3z17YaPDIrJV5C03ombcIsvjBBnlQ&sz=w400"
+  alt="โลโก้โรงเรียนรามันห์ศิริวิทย์"
+  referrerpolicy="no-referrer"
+  class="w-20 h-20 mx-auto mb-4 rounded-2xl object-contain bg-white p-2 shadow-lg border border-blue-100">
+
+
+        <h1 class="text-2xl font-bold text-slate-800">
+          บันทึกคะแนนความประพฤติ
+        </h1>
+
+        <p class="text-sm text-slate-500 mt-2">
+          โรงเรียนรามันห์ศิริวิทย์
+        </p>
+      </div>
+
+      <div class="space-y-4">
+
+        <div>
+          <label class="block text-sm font-medium mb-1">
+            Username
+          </label>
+
+          <input
+            id="loginUsername"
+            type="text"
+            class="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-400 outline-none"
+            placeholder="กรอก Username">
+            
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">
+            Password
+          </label>
+
+          <div class="relative">
+            <input
+              id="loginPassword"
+              type="password"
+              class="w-full border rounded-xl px-4 py-3 pr-14 focus:ring-2 focus:ring-indigo-400 outline-none"
+              placeholder="กรอก Password">
+            <button type="button" id="loginPasswordToggle"
+              onclick="toggleLoginPassword()"
+              aria-label="แสดงรหัสผ่าน" aria-pressed="false"
+              class="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg text-slate-500 hover:bg-slate-100 focus:ring-2 focus:ring-indigo-400">
+              <svg id="loginPasswordEye" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <button
+          onclick="login()"
+          class="w-full gradient-btn text-white py-3 rounded-xl font-semibold shadow-lg hover:opacity-90 transition">
+          🔐 เข้าสู่ระบบ
+        </button>
+        <!-- สมัครใช้งานสำหรับนักเรียน -->
+<div class="text-center mt-4">
+
+  <button
+    type="button"
+    onclick="openStudentRegister()"
+    class="text-indigo-600 font-semibold hover:underline">
+
+    🎓 สมัครใช้งานสำหรับนักเรียน
+
+  </button>
+
+  <p class="text-xs text-slate-400 mt-2">
+    นักเรียนสามารถดูคะแนนความประพฤติของตนเองเท่านั้น
+  </p>
+
+</div>
+
+      </div>
+
+    </div>
+
+  </div>
+<!-- ================= STUDENT PAGE ================= -->
+
+<div id="studentPage" class="hidden min-h-screen">
+
+  <header class="sticky top-0 z-50 glass border-b">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
+
+      <div class="flex gap-3 items-center">
+        <img id="studentHeaderAvatar" alt="รูปโปรไฟล์" class="hidden w-12 h-12 rounded-full object-cover border" />
+        <div>
+        <h1 class="text-xl md:text-2xl font-bold">
+          🎓 คะแนนความประพฤติของฉัน
+        </h1>
+
+        <div
+          id="studentHeaderName"
+          class="text-sm text-slate-500 mt-1">
+        </div>
+        </div>
+      </div>
+
+      <div class="flex gap-2 items-center">
+      <button type="button" onclick="openMyProfile()" class="px-4 py-2 rounded-xl bg-indigo-600 text-white">👤 โปรไฟล์ของฉัน</button>
+      <button
+        onclick="logout()"
+        class="px-4 py-2 rounded-xl bg-slate-800 text-white">
+        ออกจากระบบ
+      </button>
+      </div>
+
+    </div>
+  </header>
+
+
+  <main class="max-w-5xl mx-auto p-4 space-y-5">
+
+    <!-- ข้อมูลนักเรียน -->
+    <section class="card glass rounded-3xl p-6">
+
+      <h2 class="text-xl font-bold mb-4">
+        👤 ข้อมูลของฉัน
+      </h2>
+
+      <div class="grid md:grid-cols-3 gap-4">
+
+        <div class="bg-slate-50 rounded-2xl p-4">
+          <div class="text-sm text-slate-500">
+            ชื่อ-นามสกุล
+          </div>
+
+          <div
+            id="myStudentName"
+            class="text-lg font-bold mt-1">
+            -
+          </div>
+        </div>
+
+
+        <div class="bg-slate-50 rounded-2xl p-4">
+          <div class="text-sm text-slate-500">
+            รหัสนักเรียน
+          </div>
+
+          <div
+            id="myStudentId"
+            class="text-lg font-bold mt-1">
+            -
+          </div>
+        </div>
+
+
+        <div class="bg-slate-50 rounded-2xl p-4">
+          <div class="text-sm text-slate-500">
+            ระดับชั้น
+          </div>
+
+          <div
+            id="myStudentClass"
+            class="text-lg font-bold mt-1">
+            -
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- คะแนน -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+      <div class="card glass rounded-2xl p-5">
+        <div class="text-sm text-slate-500">
+          คะแนนตั้งต้น
+        </div>
+
+        <div
+          id="myBaseScore"
+          class="text-3xl font-bold">
+          100
+        </div>
+      </div>
+
+
+      <div class="card glass rounded-2xl p-5">
+        <div class="text-sm text-slate-500">
+          คะแนนเพิ่ม
+        </div>
+
+        <div
+          id="myPositiveScore"
+          class="text-3xl font-bold text-emerald-600">
+          +0
+        </div>
+      </div>
+
+
+      <div class="card glass rounded-2xl p-5">
+        <div class="text-sm text-slate-500">
+          คะแนนถูกตัด
+        </div>
+
+        <div
+          id="myNegativeScore"
+          class="text-3xl font-bold text-red-600">
+          -0
+        </div>
+      </div>
+
+
+      <div class="card glass rounded-2xl p-5">
+        <div class="text-sm text-slate-500">
+          คะแนนคงเหลือ
+        </div>
+
+        <div
+          id="myCurrentScore"
+          class="text-3xl font-bold text-indigo-600">
+          100
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- สถานะ -->
+    <section class="card glass rounded-3xl p-6">
+
+      <div class="text-sm text-slate-500">
+        สถานะความประพฤติ
+      </div>
+
+      <div
+        id="myBehaviorStatus"
+        class="text-xl font-bold mt-2">
+        -
+      </div>
+
+    </section>
+
+<!-- ================= แนวทางดำเนินการ ================= -->
+
+<section class="card glass rounded-3xl p-6">
+
+  <div class="text-sm text-slate-500">
+    📌 แนวทางดำเนินการตามคะแนนคงเหลือ
+  </div>
+
+  <div
+    id="myBehaviorAction"
+    class="text-lg font-bold mt-2">
+    -
+  </div>
+
+</section>
+
+<!-- ================= จบแนวทางดำเนินการ ================= -->
+    <section id="mySeriousNote" class="hidden card rounded-2xl p-4 bg-red-50 border border-red-200 text-red-800 font-semibold">
+      🚫 มีประวัติความผิดหมวด 3: ไม่สามารถเพิ่มคะแนนความดีเพื่อหักล้างความผิดร้ายแรงได้
+    </section>
+
+    <!-- ประวัติ -->
+    <section class="card glass rounded-3xl p-6">
+
+      <h2 class="text-xl font-bold mb-4">
+        📋 ประวัติคะแนนของฉัน
+      </h2>
+
+      <div
+        id="myTransactionList"
+        class="space-y-3">
+      </div>
+
+    </section>
+
+
+    <div class="text-center text-sm text-slate-500 py-4">
+      🔒 นักเรียนสามารถดูข้อมูลของตนเองได้เท่านั้น
+    </div>
+
+  </main>
+
+</div>
+
+<!-- ================= END STUDENT PAGE ================= -->
+  <!-- ================= MAIN APP ================= -->
+  <div id="appPage" class="hidden">
+
+    <!-- HEADER -->
+    <header class="sticky top-0 z-50 glass border-b">
+
+      <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+
+        
+<div class="flex items-center gap-3">
+
+  <!-- โลโก้โรงเรียน -->
+  <img
+    src="https://drive.google.com/thumbnail?id=1u8P3z17YaPDIrJV5C03ombcIsvjBBnlQ&sz=w400"
+    alt="โลโก้โรงเรียนรามันห์ศิริวิทย์"
+    referrerpolicy="no-referrer"
+    class="w-12 h-12 rounded-xl object-contain bg-white p-1 shadow-sm border border-blue-100">
+
+  <!-- ชื่อระบบ -->
+  <div>
+    <h1 class="text-xl md:text-2xl font-bold">
+      บันทึกคะแนนความประพฤติ
+    </h1>
+
+    <!-- สถานะเชื่อมต่อ Google Sheets -->
+    <div class="flex items-center gap-2 mt-1 text-sm text-slate-500">
+      <span id="connectionDot" class="status-dot status-loading"></span>
+      <span id="connectionText">กำลังตรวจสอบ Google Sheet</span>
+    </div>
+  </div>
+
+</div>
+
+
+        <div class="flex items-center gap-3">
+
+          <!-- ข้อมูลบัญชีที่กำลังใช้งาน -->
+<div class="
+  flex items-center gap-3
+  bg-white
+  border border-slate-200
+  rounded-2xl
+  px-4 py-2
+  shadow-sm
+">
+
+  <!-- ไอคอน -->
+  <div
+    id="currentUserIcon"
+    class="
+      w-10 h-10
+      rounded-xl
+      bg-indigo-100
+      flex items-center justify-center
+      text-xl
+    ">
+    👤
+  </div>
+
+
+  <div class="leading-tight cursor-pointer" onclick="openMyProfile()" title="แก้ไขโปรไฟล์">
+
+    <div class="text-xs text-slate-400">
+      กำลังใช้งานในบัญชี
+    </div>
+
+    <div
+      id="currentUserName"
+      class="font-bold text-slate-800">
+      -
+    </div>
+
+    <div class="flex items-center gap-1 mt-1">
+
+      <span
+        class="w-2 h-2 bg-emerald-500 rounded-full">
+      </span>
+
+      <span
+        id="currentUserRole"
+        class="text-xs font-medium text-indigo-600">
+        -
+      </span>
+
+    </div>
+
+  </div>
+
+</div>
+          <button
+            onclick="logout()"
+            class="px-4 py-2 rounded-xl bg-slate-800 text-white hover:bg-slate-700">
+            ออกจากระบบ
+          </button>
+
+        </div>
+
+      </div>
+
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 space-y-6">
+
+
+      <!-- ============ หน้าแรก: ปุ่มไปแต่ละหัวข้อ ============ -->
+      <section id="mainMenu" class="app-page-active space-y-5" aria-label="เมนูหลัก">
+        <div class="card glass rounded-3xl p-6">
+          <div class="mb-5">
+            <h2 class="text-2xl font-bold text-slate-800">🏠 หน้าหลัก</h2>
+            <p class="text-slate-500 mt-1">เลือกรายการที่ต้องการใช้งาน</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <button type="button" data-app-page-target="students" onclick="openAppPage('students')" class="main-menu-tile rounded-2xl bg-blue-50 border border-blue-100 p-5 text-left">
+              <span class="text-3xl">👥</span><div class="font-bold text-lg mt-2">รายชื่อนักเรียนทั้งหมด</div><p class="text-sm text-slate-500">ค้นหา ดูคะแนน และกรองรายชื่อ</p>
+            </button>
+            <button type="button" data-app-page-target="record" onclick="openAppPage('record')" class="main-menu-tile rounded-2xl bg-emerald-50 border border-emerald-100 p-5 text-left">
+              <span class="text-3xl">📝</span><div class="font-bold text-lg mt-2">บันทึกคะแนนความประพฤติ</div><p class="text-sm text-slate-500">เพิ่มคะแนนความดีและตัดคะแนน</p>
+            </button>
+            <button type="button" data-app-page-target="history" onclick="openAppPage('history')" class="main-menu-tile rounded-2xl bg-amber-50 border border-amber-100 p-5 text-left">
+              <span class="text-3xl">🔍</span><div class="font-bold text-lg mt-2">ค้นหาและประวัติรายการ</div><p class="text-sm text-slate-500">ตรวจสอบประวัติการบันทึกคะแนน</p>
+            </button>
+            <button type="button" data-app-page-target="chart" onclick="openAppPage('chart')" class="main-menu-tile rounded-2xl bg-violet-50 border border-violet-100 p-5 text-left">
+              <span class="text-3xl">📊</span><div class="font-bold text-lg mt-2">กราฟคะแนนความประพฤติ</div><p class="text-sm text-slate-500">ดูภาพรวมคะแนนด้วยกราฟ</p>
+            </button>
+            <button type="button" data-app-page-target="export" onclick="openAppPage('export')" class="main-menu-tile rounded-2xl bg-cyan-50 border border-cyan-100 p-5 text-left">
+              <span class="text-3xl">📥</span><div class="font-bold text-lg mt-2">ดาวน์โหลดข้อมูล Google Sheets</div><p class="text-sm text-slate-500">ดาวน์โหลด PDF, Excel และ CSV</p>
+            </button>
+            <button type="button" data-app-page-target="sync" onclick="openAppPage('sync')" class="main-menu-tile rounded-2xl bg-slate-100 border border-slate-200 p-5 text-left">
+              <span class="text-3xl">🔄</span><div class="font-bold text-lg mt-2">สถานะการซิงค์</div><p class="text-sm text-slate-500">ตรวจสอบข้อมูลและ Google Sheet</p>
+            </button>
+
+            <button type="button" data-app-page-target="profile" onclick="openAppPage('profile')" class="main-menu-tile rounded-2xl bg-indigo-50 border border-indigo-100 p-5 text-left">
+              <span class="text-3xl">👤</span><div class="font-bold text-lg mt-2">โปรไฟล์ของฉัน</div><p class="text-sm text-slate-500">แก้ไขชื่อ รูปโปรไฟล์ และรหัสผ่าน</p>
+            </button>
+            <button type="button" id="resetMenuButton" data-app-page-target="reset" onclick="openAppPage('reset')" class="hidden main-menu-tile rounded-2xl bg-red-50 border border-red-200 p-5 text-left">
+              <span class="text-3xl">♻️</span><div class="font-bold text-lg mt-2">รีเซ็ตคะแนนนักเรียน</div><p class="text-sm text-slate-500">สำหรับแอดมินเท่านั้น สำรองก่อนรีเซ็ตทั้งหมด</p>
+            </button>
+            <button type="button" id="adminMenuButton" onclick="openAppPage('admin')" class="hidden main-menu-tile rounded-2xl bg-rose-50 border border-rose-100 p-5 text-left">
+              <span class="text-3xl">👨‍💼</span><div class="font-bold text-lg mt-2">จัดการผู้ใช้งาน</div><p class="text-sm text-slate-500">เฉพาะบัญชีผู้ดูแลระบบ</p>
+            </button>
+          </div>
+        </div>
+      </section>
+      <!-- ส่วนหัวของหน้าย่อย -->
+      <div id="pageNavigator" class="hidden items-center justify-between gap-3 flex-wrap card glass rounded-2xl p-4">
+        <button type="button" onclick="openAppPage('home')" class="px-4 py-2 rounded-xl gradient-btn text-white font-semibold hover:opacity-90">← กลับหน้าหลัก</button>
+        <strong id="currentPageTitle" class="text-slate-700"></strong>
+      </div>
+
+      <!-- QUICK ACTION -->
+      <section class="grid md:grid-cols-2 gap-4" data-app-page="home" data-home-initial="yes">
+
+        <button
+          onclick="testConnection()"
+          class="card glass rounded-2xl p-5 text-left hover:scale-[1.01] transition">
+
+          <div class="text-3xl mb-2">🔗</div>
+
+          <div class="font-bold">
+            ทดสอบการเชื่อมต่อ
+          </div>
+
+          <div class="text-sm text-slate-500">
+            ตรวจสอบการเชื่อมต่อ Google Sheet
+          </div>
+
+        </button>
+
+        <button
+          onclick="loadDashboard()"
+          class="card glass rounded-2xl p-5 text-left hover:scale-[1.01] transition">
+
+          <div class="text-3xl mb-2">📥</div>
+
+          <div class="font-bold">
+            โหลดข้อมูลจาก Google Sheet
+          </div>
+
+          <div class="text-sm text-slate-500">
+            ดึงรายชื่อนักเรียนและประวัติล่าสุด
+          </div>
+
+        </button>
+
+      </section>
+
+      <!-- SUMMARY CARDS -->
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-4" data-app-page="home" data-home-initial="yes">
+
+        <div class="card glass rounded-2xl p-5">
+          <div class="text-sm text-slate-500">
+            นักเรียนทั้งหมด
+          </div>
+          <div id="totalStudents" class="text-3xl font-bold mt-1">
+            0
+          </div>
+        </div>
+
+        <div class="card glass rounded-2xl p-5">
+          <div class="text-sm text-slate-500">
+            นักเรียนที่แสดง
+          </div>
+          <div id="visibleStudents" class="text-3xl font-bold mt-1 text-indigo-600">
+            0
+          </div>
+        </div>
+
+        <div class="card glass rounded-2xl p-5">
+          <div class="text-sm text-slate-500">
+            คะแนนเพิ่มรวม
+          </div>
+          <div id="totalPositive" class="text-3xl font-bold mt-1 text-emerald-600">
+            +0
+          </div>
+        </div>
+
+        <div class="card glass rounded-2xl p-5">
+          <div class="text-sm text-slate-500">
+            คะแนนตัดรวม
+          </div>
+          <div id="totalNegative" class="text-3xl font-bold mt-1 text-red-600">
+            0
+          </div>
+        </div>
+
+      </section>
+
+      <!-- STUDENT LIST -->
+      <section class="card glass rounded-3xl p-5" data-app-page="students">
+
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-5">
+
+          <div>
+            <h2 class="text-xl font-bold">
+              👥 รายชื่อนักเรียนทั้งหมด
+            </h2>
+
+            <p class="text-sm text-slate-500">
+              ค้นหาและกรองตามระดับชั้น
+            </p>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-2">
+
+            <input
+              id="studentSearch"
+              type="text"
+              placeholder="ค้นหา ชื่อ รหัส ชั้น เลขที่"
+              oninput="renderStudents()"
+              class="border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-400">
+
+            <select
+              id="classFilter"
+              onchange="renderStudents()"
+              class="border rounded-xl px-4 py-2 outline-none">
+
+              <option value="">
+                ทุกระดับชั้น
+              </option>
+
+            </select>
+<select
+  id="statusFilter"
+  onchange="renderStudents()"
+  class="border rounded-xl px-4 py-2 outline-none">
+
+  <option value="">ทุกสถานะ</option>
+  <option value="normal">🟢 ปกติ</option>
+  <option value="watch">🟡 เฝ้าระวัง</option>
+  <option value="risk">🔴 เสี่ยง</option>
+
+</select>
+          </div>
+
+        </div>
+
+        <div class="overflow-x-auto scroll-area">
+
+          <table class="w-full text-sm">
+
+            <thead class="sticky top-0 bg-slate-100">
+
+              <tr>
+               <th class="p-3 text-left">เลขที่</th>
+<th class="p-3 text-left">รหัส</th>
+<th class="p-3 text-left">ชื่อ-นามสกุล</th>
+<th class="p-3 text-left">ระดับชั้น</th>
+<th class="p-3 text-center">คะแนนคงเหลือ</th>
+
+<th class="p-3 text-center">
+  สถานะ
+</th>
+
+<th class="p-3 text-center">รายการ</th>
+<th data-teacher-hidden class="p-3 text-center">จัดการ</th>
+              </tr>
+
+            </thead>
+
+            <tbody id="studentTableBody"></tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+      <!-- RECORD SCORE -->
+      <section class="card glass rounded-3xl p-5" data-app-page="record">
+
+        <h2 class="text-xl font-bold mb-5">
+          📝 บันทึกคะแนนความประพฤติ
+        </h2>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+         <div>
+  <label class="block text-sm mb-1">
+    ระดับชั้น
+  </label>
+
+  <select
+    id="recordClass"
+    onchange="filterStudentsByClass()"
+    class="w-full border rounded-xl px-4 py-3">
+
+    <option value="">
+      -- เลือกระดับชั้น --
+    </option>
+
+  </select>
+</div>
+          <div>
+            <label class="block text-sm mb-1">
+              นักเรียน
+            </label>
+
+            <select
+              id="recordStudent"
+              onchange="showSelectedStudentScore()"
+              class="w-full border rounded-xl px-4 py-3">
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm mb-1">
+              วันที่ทำรายการ
+            </label>
+
+            <input
+              id="recordDate"
+              type="date"
+              class="w-full border rounded-xl px-4 py-3">
+          </div>
+
+          <div>
+            <label class="block text-sm mb-1">
+              ประเภทรายการ
+            </label>
+
+            <select
+              id="recordType"
+              onchange="renderReasons()"
+              class="w-full border rounded-xl px-4 py-3">
+
+              <option value="positive">
+                เพิ่มคะแนนความดี
+              </option>
+
+              <option value="minor">
+                หมวด 1 ความผิดสถานเบา
+              </option>
+
+              <option value="moderate">
+                หมวด 2 ความผิดสถานปานกลาง
+              </option>
+
+              <option value="serious">
+                หมวด 3 ความผิดร้ายแรง
+              </option>
+
+            </select>
+          </div>
+
+          <div id="seriousScoreWarning" class="hidden lg:col-span-3 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-800 text-sm font-semibold" role="alert">
+            🚫 นักเรียนมีประวัติความผิดหมวด 3 ไม่อนุญาตให้เพิ่มคะแนนความดีหรือใช้คะแนนหักล้างความผิดหมวด 3 (ยังบันทึกการกระทำผิดอื่นได้ตามสิทธิ์เดิม)
+          </div>
+
+          <div class="lg:col-span-2">
+
+            <label class="block text-sm mb-1">
+              ความผิดฐาน / ความดีฐาน
+            </label>
+
+            <select
+              id="recordReason"
+              onchange="updateScorePreview()"
+              class="w-full border rounded-xl px-4 py-3">
+            </select>
+
+          </div>
+
+          <div id="hoursBox" class="hidden">
+
+            <label class="block text-sm mb-1">
+              จำนวนชั่วโมงบำเพ็ญประโยชน์
+            </label>
+
+            <input
+              id="recordHours"
+              type="number"
+              min="1"
+              value="1"
+              oninput="updateScorePreview()"
+              class="w-full border rounded-xl px-4 py-3">
+
+          </div>
+
+          <div class="lg:col-span-3">
+
+            <label class="block text-sm mb-1">
+              หมายเหตุ
+            </label>
+
+            <textarea
+              id="recordNote"
+              rows="2"
+              class="w-full border rounded-xl px-4 py-3"
+              placeholder="รายละเอียดเพิ่มเติม">
+            </textarea>
+
+          </div>
+
+        </div>
+
+        <div class="grid sm:grid-cols-3 gap-4 mt-5">
+
+          <div class="rounded-2xl bg-slate-100 p-4">
+
+            <div class="text-sm text-slate-500">
+              คะแนนปัจจุบัน
+            </div>
+
+            <div id="currentScorePreview" class="text-3xl font-bold">
+              -
+            </div>
+
+          </div>
+
+          <div class="rounded-2xl bg-indigo-50 p-4">
+
+            <div class="text-sm text-slate-500">
+              คะแนนรายการนี้
+            </div>
+
+            <div id="transactionScorePreview" class="text-3xl font-bold text-indigo-600">
+              -
+            </div>
+
+          </div>
+
+          <div class="rounded-2xl bg-cyan-50 p-4">
+
+            <div class="text-sm text-slate-500">
+              คะแนนหลังทำรายการ
+            </div>
+
+            <div id="afterScorePreview" class="text-3xl font-bold text-cyan-700">
+              -
+            </div>
+
+          </div>
+
+        </div>
+
+        <button
+          onclick="saveTransaction()"
+          class="mt-5 gradient-success text-white px-6 py-3 rounded-xl font-semibold shadow-lg">
+          💾 บันทึกรายการ
+        </button>
+
+      </section>
+
+      <!-- HISTORY -->
+      <section class="card glass rounded-3xl p-5" data-app-page="history">
+
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+
+          <div>
+
+            <h2 class="text-xl font-bold">
+              🔍 ค้นหาและประวัติรายการ
+            </h2>
+
+            <p class="text-sm text-slate-500">
+              ค้นหาตามชื่อนักเรียนและระดับชั้น
+            </p>
+
+          </div>
+
+         <div class="flex flex-wrap gap-2">
+
+  <!-- เลือกประเภท -->
+  <select
+    id="historyTypeFilter"
+    onchange="populateHistoryReasons(); renderHistory();"
+    class="border rounded-xl px-3 py-2">
+
+    <option value="">ทุกประเภท</option>
+    <option value="positive">➕ เพิ่มคะแนน</option>
+    <option value="minor">➖ ลดคะแนน หมวด 1</option>
+    <option value="moderate">➖ ลดคะแนน หมวด 2</option>
+    <option value="serious">🚨 ลดคะแนน หมวด 3</option>
+
+  </select>
+
+
+  <!-- เลือกรายการ -->
+  <select
+    id="historyReasonFilter"
+    onchange="renderHistory()"
+    class="border rounded-xl px-3 py-2">
+
+    <option value="">ทุกรายการ</option>
+
+  </select>
+
+
+  <!-- เลือกระดับชั้น -->
+  <select
+    id="historyClassFilter"
+    onchange="renderHistory()"
+    class="border rounded-xl px-3 py-2">
+
+    <option value="">ทุกระดับชั้น</option>
+
+  </select>
+
+
+  <!-- ค้นหาชื่อ -->
+  <input
+    id="historySearch"
+    oninput="renderHistory()"
+    placeholder="ค้นหาชื่อนักเรียน / ผู้บันทึก"
+    class="border rounded-xl px-3 py-2">
+
+
+  <button
+    onclick="clearHistorySearch()"
+    class="px-4 py-2 rounded-xl bg-slate-500 text-white">
+    🗑️ ล้าง
+  </button>
+
+</div> 
+
+        </div>
+<div
+  id="historySummaryBox"
+  class="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+  <div class="bg-indigo-50 rounded-2xl p-4">
+    <div class="text-sm text-slate-500">
+      จำนวนรายการที่พบ
+    </div>
+
+    <div
+      id="historyTotalCount"
+      class="text-2xl font-bold text-indigo-600">
+      0
+    </div>
+  </div>
+
+
+  <div class="bg-emerald-50 rounded-2xl p-4">
+    <div class="text-sm text-slate-500">
+      จำนวนนักเรียน
+    </div>
+
+    <div
+      id="historyStudentCount"
+      class="text-2xl font-bold text-emerald-600">
+      0
+    </div>
+  </div>
+
+
+  <div class="bg-slate-50 rounded-2xl p-4">
+    <div class="text-sm text-slate-500">
+      คะแนนรวม
+    </div>
+
+    <div
+      id="historyScoreTotal"
+      class="text-2xl font-bold">
+      0
+    </div>
+  </div>
+
+</div>
+        <div class="overflow-x-auto scroll-area">
+
+          <table class="w-full text-sm">
+
+            <thead class="sticky top-0 bg-slate-100">
+
+              <tr>
+                <th class="p-3 text-left">วันที่</th>
+                <th class="p-3 text-left">เลขที่</th>
+                <th class="p-3 text-left">ชื่อ</th>
+                <th class="p-3 text-left">ชั้น</th>
+                <th class="p-3 text-left">รายการ</th>
+                <th class="p-3 text-center">คะแนน</th>
+                <th class="p-3 text-left">ผู้บันทึก</th>
+                <th class="p-3 text-center">จัดการ</th>
+              </tr>
+
+            </thead>
+
+            <tbody id="historyTableBody"></tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+      <!-- GRAPH -->
+      <section class="card glass rounded-3xl p-5" data-app-page="chart">
+  <div class="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
+    <label for="chartClassFilter" class="font-semibold text-slate-700">🏫 เลือกห้องเรียน</label>
+    <select id="chartClassFilter" onchange="renderChart()" class="border rounded-xl px-4 py-3 bg-white min-w-[200px]">
+      <option value="">ทุกห้องเรียน</option>
+    </select>
+  </div>
+
+
+        <h2 class="text-xl font-bold mb-4">
+          📊 กราฟคะแนนความประพฤติ
+        </h2>
+
+        <div class="relative h-[350px]">
+          <canvas id="scoreChart"></canvas>
+        </div>
+
+      </section>
+
+      <!-- EXPORT -->
+      <!-- ================= EXPORT CENTER ================= -->
+<section class="card glass rounded-3xl p-6 border border-slate-200" data-app-page="export">
+
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+
+    <div class="flex items-center gap-3">
+
+      <div class="
+        w-12 h-12
+        rounded-2xl
+        bg-gradient-to-br from-indigo-500 to-cyan-500
+        text-white
+        flex items-center justify-center
+        text-2xl
+        shadow-lg
+      ">
+        ⬇️
+      </div>
+
+      <div>
+
+        <h2 class="text-xl font-bold text-slate-800">
+          ศูนย์ส่งออกรายงาน
+        </h2>
+
+        <p class="text-sm text-slate-500 mt-1">
+          ดาวน์โหลดข้อมูลรายชื่อนักเรียนและคะแนนเป็น Excel, CSV หรือ PDF (ครูทั่วไปเห็นเฉพาะห้องที่รับผิดชอบ)
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <div>
+
+      <label class="block text-sm font-semibold text-slate-600 mb-2">
+        ระดับชั้น
+      </label>
+
+      <select
+        id="exportClassFilter"
+        class="
+          min-w-[220px]
+          bg-white
+          border border-slate-200
+          rounded-2xl
+          px-4 py-3
+          shadow-sm
+          outline-none
+          focus:ring-2
+          focus:ring-indigo-400
+        ">
+
+        <option value="">
+          ทุกระดับชั้น
+        </option>
+
+      </select>
+
+    </div>
+
+  </div>
+
+
+  <div class="border-t border-slate-100 my-6"></div>
+
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+    <button
+      onclick="downloadPDF()"
+      class="
+        bg-white
+        border border-slate-200
+        rounded-2xl
+        p-4
+        text-left
+        hover:shadow-lg
+        hover:border-red-300
+        transition
+      ">
+
+      <div class="flex items-center gap-4">
+
+        <div class="
+          w-12 h-12
+          rounded-xl
+          bg-red-50
+          text-red-600
+          flex items-center justify-center
+          text-2xl
+        ">
+          📄
+        </div>
+
+        <div>
+          <div class="font-bold">
+            PDF Report
+          </div>
+
+          <div class="text-xs text-slate-500 mt-1">
+            สำหรับพิมพ์และส่งรายงาน
+          </div>
+        </div>
+
+      </div>
+
+    </button>
+
+
+    <button
+      onclick="downloadExcel()"
+      class="
+        bg-white
+        border border-slate-200
+        rounded-2xl
+        p-4
+        text-left
+        hover:shadow-lg
+        hover:border-emerald-300
+        transition
+      ">
+
+      <div class="flex items-center gap-4">
+
+        <div class="
+          w-12 h-12
+          rounded-xl
+          bg-emerald-50
+          text-emerald-600
+          flex items-center justify-center
+          text-2xl
+        ">
+          📊
+        </div>
+
+        <div>
+          <div class="font-bold">
+            Excel
+          </div>
+
+          <div class="text-xs text-slate-500 mt-1">
+            สำหรับวิเคราะห์ข้อมูล
+          </div>
+        </div>
+
+      </div>
+
+    </button>
+
+
+    <button
+      onclick="downloadCSV()"
+      class="
+        bg-white
+        border border-slate-200
+        rounded-2xl
+        p-4
+        text-left
+        hover:shadow-lg
+        hover:border-cyan-300
+        transition
+      ">
+
+      <div class="flex items-center gap-4">
+
+        <div class="
+          w-12 h-12
+          rounded-xl
+          bg-cyan-50
+          text-cyan-600
+          flex items-center justify-center
+          text-2xl
+        ">
+          🗂️
+        </div>
+
+        <div>
+          <div class="font-bold">
+            CSV Data
+          </div>
+
+          <div class="text-xs text-slate-500 mt-1">
+            สำหรับนำข้อมูลไปใช้ต่อ
+          </div>
+        </div>
+
+      </div>
+
+    </button>
+
+  </div>
+
+</section>
+
+      <!-- ADMIN -->
+      <section id="adminSection" class="card glass rounded-3xl p-5 hidden" data-app-page="admin">
+
+        <h2 class="text-xl font-bold mb-4">
+          👨‍💼 จัดการผู้ใช้งาน
+        </h2>
+
+        <div class="grid md:grid-cols-4 gap-3">
+
+          <input
+            id="newUsername"
+            placeholder="Username"
+            class="border rounded-xl px-4 py-3">
+
+          <input
+            id="newFullName"
+            placeholder="ชื่อ-นามสกุล"
+            class="border rounded-xl px-4 py-3">
+
+          <input
+            id="newPassword"
+            type="password"
+            placeholder="Password"
+            class="border rounded-xl px-4 py-3">
+
+          <select
+            id="newRole"
+            class="border rounded-xl px-4 py-3">
+
+            <option value="teacher">
+              ครูผู้สอน
+            </option>
+
+            <option value="discipline">
+              ครูฝ่ายปกครอง
+            </option>
+
+            <option value="admin">
+              Admin
+            </option>
+
+          </select>
+
+        </div>
+
+        <button
+          onclick="createUser()"
+          class="mt-4 gradient-btn text-white px-5 py-3 rounded-xl">
+          ➕ เพิ่มผู้ใช้งาน
+        </button>
+
+       <!-- ================= บัญชีครู ================= -->
+
+<div class="mt-6">
+
+  <h3 class="text-lg font-bold mb-3">
+    👨‍🏫 บัญชีครูและบุคลากร
+  </h3>
+
+  <div class="overflow-x-auto">
+
+    <table class="w-full text-sm">
+
+      <thead class="bg-slate-100">
+
+        <tr>
+         <th>Username</th>
+<th>ชื่อ-นามสกุล</th>
+<th>รหัสนักเรียน</th>
+<th>ระดับชั้น</th>
+<th>วันที่สมัคร</th>
+<th>เข้าใช้ล่าสุด</th>
+<th>สถานะ</th>
+<th>จัดการ</th>
+        </tr>
+
+      </thead>
+
+      <tbody id="teacherUserTableBody"></tbody>
+
+    </table>
+
+  </div>
+
+</div>
+
+
+<!-- ================= บัญชีนักเรียน ================= -->
+
+<div class="mt-8">
+
+  <h3 class="text-lg font-bold mb-3">
+    🎓 บัญชีนักเรียน
+  </h3>
+
+  <div class="overflow-x-auto">
+
+    <table class="w-full text-sm">
+
+      <thead class="bg-indigo-50">
+
+        <tr>
+          <th class="p-3 text-left">Username</th>
+<th class="p-3 text-left">ชื่อ-นามสกุล</th>
+<th class="p-3 text-left">รหัสนักเรียน</th>
+<th class="p-3 text-left">ระดับชั้น</th>
+
+<th class="p-3 text-left">วันที่สมัคร</th>
+
+<th class="p-3 text-left">เข้าใช้ล่าสุด</th>
+<th class="p-3 text-center">สถานะ</th>
+<th class="p-3 text-center">จัดการ</th>
+        </tr>
+
+      </thead>
+
+      <tbody id="studentUserTableBody"></tbody>
+
+    </table>
+
+  </div>
+
+</div>
+
+      </section>
+
+
+      <section data-app-page="reset" id="resetPage" class="card glass rounded-3xl p-6">
+        <h2 class="text-2xl font-bold text-red-800">♻️ รีเซ็ตคะแนนนักเรียนทั้งหมด</h2>
+        <div class="mt-8 rounded-2xl border-2 border-red-200 bg-red-50 p-5" id="adminResetAllBox">
+          <h3 class="text-xl font-bold text-red-800">♻️ รีเซ็ตคะแนนนักเรียนทั้งหมด</h3>
+          <p class="text-sm text-red-800 mt-2">สำหรับผู้ดูแลระบบเท่านั้น: รีเซ็ตคะแนนคงเหลือของนักเรียนทุกคนกลับเป็น 100 คะแนน โดยเก็บสำรองรายการเดิมในชีตชื่อ Backup_Behavior_... ก่อนล้างประวัติคะแนนที่ใช้งานอยู่</p>
+          <p class="text-sm font-semibold text-red-800 mt-2">คำเตือน: การรีเซ็ตจะล้างประวัติความผิดหมวด 3 ในระบบที่ใช้งานด้วย จึงควรใช้เฉพาะเมื่อเริ่มรอบคะแนนใหม่ตามระเบียบโรงเรียน</p>
+          <button type="button" onclick="confirmResetAllStudentScores()" class="mt-4 px-5 py-3 rounded-xl text-white font-bold bg-red-700 hover:bg-red-800">รีเซ็ตคะแนนทุกคนเป็น 100</button>
+        </div>
+      </section>
+
+
+      <!-- โปรไฟล์ส่วนตัว: ครู/ฝ่ายปกครอง/Admin -->
+      <section class="card glass rounded-3xl p-6" data-app-page="profile">
+        <h2 class="text-xl font-bold mb-3">👤 โปรไฟล์ของฉัน</h2>
+        <div id="staffProfileSlot"></div>
+      </section>
+
+      <!-- SYNC -->
+      <section class="card glass rounded-3xl p-5" data-app-page="sync">
+
+        <h2 class="text-xl font-bold">
+          🔄 สถานะการซิงค์
+        </h2>
+
+        <div class="mt-3 text-sm">
+
+          <div>
+            Google Sheet:
+            <span id="syncStatus" class="font-semibold">
+              -
+            </span>
+          </div>
+
+          <div>
+            ซิงค์ล่าสุด:
+            <span id="lastSync">
+              -
+            </span>
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="text-center text-xs text-slate-500 px-4 py-8">
+
+      © 2026 ระบบบันทึกคะแนนความประพฤติ |
+      ผู้พัฒนา นายมูฮัมหมัดซอบรี นางสาวดารูณี นางสาวซูเฟียนาร์
+      ที่ปรึกษา ครูซัฟวาณีย์ ครูซูไฮซัน
+
+    </footer>
+
+  </div>
+
+
+<div id="studentProfileOverlay" class="hidden fixed inset-0 z-[100] overflow-y-auto bg-slate-900/60 p-4">
+  <div class="max-w-xl mx-auto my-10 bg-white rounded-3xl p-6 shadow-2xl">
+    <button type="button" onclick="closeStudentProfile()" class="float-right text-slate-600 font-semibold">✕ ปิด</button>
+    <h2 class="text-xl font-bold mb-4">👤 โปรไฟล์ของฉัน</h2>
+    <div id="studentProfileSlot"></div>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+<script>
+
+
+/* ===== หน้าหลัก / เมนูแยกหัวข้อ ===== */
+const APP_PAGE_TITLES = {
+  students: '👥 รายชื่อนักเรียนทั้งหมด', record: '📝 บันทึกคะแนนความประพฤติ',
+  history: '🔍 ค้นหาและประวัติรายการ', chart: '📊 กราฟคะแนนความประพฤติ',
+  export: '📥 ดาวน์โหลดข้อมูล Google Sheets', admin: '👨‍💼 จัดการผู้ใช้งาน',
+  sync: '🔄 สถานะการซิงค์', profile: '👤 โปรไฟล์ของฉัน', reset: '♻️ รีเซ็ตคะแนนนักเรียน'
+};
+function openAppPage(page) {
+  if (!CURRENT_USER || CURRENT_USER.role === 'student') return;
+  if (page !== 'home' && !Object.prototype.hasOwnProperty.call(APP_PAGE_TITLES, page)) return;
+  if ((page === 'admin' || page === 'reset') && CURRENT_USER.role !== 'admin') return;
+  if (CURRENT_USER.role === 'teacher' && !['home', 'students', 'chart', 'export', 'profile'].includes(page)) {
+    Swal.fire('ไม่มีสิทธิ์เข้าถึง', 'ครูทั่วไปดูรายชื่อ กราฟ ดาวน์โหลดข้อมูลเฉพาะห้อง และจัดการโปรไฟล์ได้', 'warning');
+    return;
+  }
+  document.querySelectorAll('#appPage [data-app-page]').forEach(section => {
+    section.classList.toggle('app-page-active', section.dataset.appPage === page);
+  });
+  const mainMenu = document.getElementById('mainMenu');
+  const navigator = document.getElementById('pageNavigator');
+  mainMenu.classList.toggle('app-page-active', page === 'home');
+  navigator.classList.toggle('app-page-active', page !== 'home');
+  navigator.classList.toggle('hidden', page === 'home');
+  document.getElementById('currentPageTitle').textContent = APP_PAGE_TITLES[page] || '';
+  window.scrollTo({top: 0, behavior: 'auto'});
+  if (page === 'profile') loadMyProfile('staffProfileSlot');
+  if (page === 'chart' && typeof renderChart === 'function' && typeof STUDENTS !== 'undefined') {
+    requestAnimationFrame(() => renderChart());
+  }
+}
+function setupAppMainMenu() {
+  const adminButton = document.getElementById('adminMenuButton');
+  if (adminButton) adminButton.classList.toggle('hidden', !CURRENT_USER || CURRENT_USER.role !== 'admin');
+  const resetButton = document.getElementById('resetMenuButton');
+  if (resetButton) resetButton.classList.toggle('hidden', !CURRENT_USER || CURRENT_USER.role !== 'admin');
+  const teacherOnly = CURRENT_USER && CURRENT_USER.role === 'teacher';
+  document.querySelectorAll('[data-app-page-target]').forEach(el => {
+    const page = el.getAttribute('data-app-page-target');
+    el.classList.toggle('hidden', !!teacherOnly && !['students','chart','export','profile'].includes(page));
+  });
+  document.querySelectorAll('[data-home-initial]').forEach(el => {
+    el.classList.toggle('teacher-home-hidden', !!teacherOnly);
+  });
+  document.querySelectorAll('[data-teacher-hidden]').forEach(el => {
+    el.classList.toggle('hidden', !!teacherOnly);
+  });
+  openAppPage('home');
+}
+
+let TOKEN = '';
+
+let CURRENT_USER = null;
+
+let STUDENTS = [];
+
+let TRANSACTIONS = [];
+
+let USERS = [];
+
+let SCORE_CHART = null;
+
+const BASE_SCORE = 100;
+
+
+/* =========================
+   RULES
+========================= */
+
+const RULES = {
+
+  positive: [
+
+    {
+      id: 'P1',
+      text: 'เก็บสิ่งของแล้วส่งคืนเจ้าของ',
+      score: 5
+    },
+
+    {
+      id: 'P2',
+      text: 'ให้ข้อมูลการกระทำความผิดต่าง ๆ',
+      score: 10
+    },
+
+    {
+      id: 'P3',
+      text: 'อุทิศตน เสียสละช่วยงานกิจกรรมของโรงเรียนจนเป็นที่ยอมรับ',
+      score: 10
+    },
+
+    {
+      id: 'P4',
+      text: 'สร้างชื่อเสียงที่ดีด้านต่าง ๆ ให้กับโรงเรียน',
+      score: 25
+    },
+
+    {
+      id: 'P5',
+      text: 'ทำกิจกรรมบำเพ็ญประโยชน์ ชั่วโมงละ 5 คะแนน',
+      score: 5,
+      hours: true
+    }
+
+  ],
+
+  minor: [
+
+    ['M1-1','มาสายโดยไม่มีเหตุผลสมควร',-5],
+    ['M1-2','ไม่รักษาความสะอาดในบริเวณโรงเรียน',-5],
+    ['M1-3','ผมยาวหรือทรงผมผิดระเบียบ',-5],
+    ['M1-4','ไว้หนวดเครา',-5],
+    ['M1-5','สวมเสื้อผ้าผิดระเบียบ',-5],
+    ['M1-6','ไม่เอาชายเสื้อเข้าในกางเกงหรือกระโปรง',-5],
+    ['M1-7','ไม่คาดเข็มขัดหรือใช้เข็มขัดผิดระเบียบ',-5],
+    ['M1-8','เขียนคิ้ว กันคิ้ว ใช้เครื่องสำอาง',-5],
+    ['M1-9','ไว้เล็บยาวหรือทาเล็บ ทาปาก',-5],
+    ['M1-10','ไม่เข้าแถวเคารพธงชาติ',-5]
+
+  ].map(x => ({
+    id: x[0],
+    text: x[1],
+    score: x[2]
+  })),
+
+  moderate: [
+
+    ['M2-1','ขาดละหมาด',-10],
+    ['M2-2','กล่าววาจาหยาบคายต่อเพื่อนหรือบุคคลอื่น',-10],
+    ['M2-3','ออกนอกบริเวณโรงเรียนโดยไม่ได้รับอนุญาต',-10],
+    ['M2-4','หนีเรียน โดดเรียน',-10],
+    ['M2-5','ใช้โทรศัพท์ในเวลาเรียน',-10],
+    ['M2-6','ขีดเขียนโต๊ะ เก้าอี้ หรือทำทรัพย์สินสกปรก',-10],
+    ['M2-7','ไม่เข้าร่วมกิจกรรมตามที่โรงเรียนกำหนด',-10],
+    ['M2-8','นำหนังสือหรือสื่อลามกอนาจารหรือนำสื่อที่ไม่เกี่ยวข้องกับการเรียนเข้ามาในโรงเรียน',-10],
+    ['M2-10','พูดปด พูดโกหก ให้ข้อมูลเท็จ',-10]
+
+  ].map(x => ({
+    id: x[0],
+    text: x[1],
+    score: x[2]
+  })),
+
+  serious: [
+
+    ['M3-1','จำหน่าย เสพยาเสพติด หรือสูบบุหรี่',-50],
+    ['M3-2','เล่นการพนันทุกชนิด',-50],
+    ['M3-4','ก่อเหตุทะเลาะวิวาท ทำร้ายร่างกาย',-50],
+    ['M3-5','พกพาอาวุธเข้ามาภายในโรงเรียน',-50],
+    ['M3-6','ทำลายทรัพย์สินของโรงเรียนหรือบุคคลอื่น',-50],
+    ['M3-7','ประพฤติตนในทำนองชู้สาว',-50],
+    ['M3-8','ข่มขู่ บังคับ รีดไถ กลั่นแกล้ง รังแกผู้อื่น',-50],
+    ['M3-9','ประพฤติชั่วหรือทำให้โรงเรียนเสียหาย เช่น โพสต์ข้อความลงโซเชียล',-50]
+
+  ].map(x => ({
+    id: x[0],
+    text: x[1],
+    score: x[2]
+  }))
+
+};
+
+function openStudentRegister() {
+
+  Swal.fire({
+
+    title: '🎓 สมัครใช้งานสำหรับนักเรียน',
+
+    width: 650,
+
+    html: `
+      <div style="text-align:left;font-family:Sarabun,sans-serif;">
+
+        <label style="display:block;margin-bottom:5px;font-weight:600;">
+          รหัสนักเรียน
+        </label>
+
+        <input
+          id="regStudentId"
+          class="swal2-input"
+          placeholder="กรอกรหัสนักเรียน"
+          autocomplete="off"
+          style="width:100%;margin:0 0 15px 0;"
+        >
+
+
+        <label style="display:block;margin-bottom:5px;font-weight:600;">
+          ระดับชั้น
+        </label>
+
+        <select
+          id="regClass"
+          class="swal2-select"
+          style="width:100%;margin:0 0 15px 0;"
+        >
+
+          <option value="">-- เลือกระดับชั้น --</option>
+
+          <option value="ม.1/1">ม.1/1</option>
+          <option value="ม.1/2">ม.1/2</option>
+
+          <option value="ม.2/1">ม.2/1</option>
+          <option value="ม.2/2">ม.2/2</option>
+
+          <option value="ม.3/1">ม.3/1</option>
+          <option value="ม.3/2">ม.3/2</option>
+          <option value="ม.3/3">ม.3/3</option>
+
+          <option value="ม.4/1">ม.4/1</option>
+          <option value="ม.4/2">ม.4/2</option>
+
+          <option value="ม.5/1">ม.5/1</option>
+          <option value="ม.5/2">ม.5/2</option>
+
+          <option value="ม.6/1">ม.6/1</option>
+          <option value="ม.6/2">ม.6/2</option>
+
+        </select>
+
+
+        <label style="display:block;margin-bottom:5px;font-weight:600;">
+          ชื่อ-นามสกุล
+        </label>
+
+        <input
+          id="regFullName"
+          class="swal2-input"
+          placeholder="กรอกให้ตรงกับรายชื่อในโรงเรียน"
+          autocomplete="off"
+          style="width:100%;margin:0 0 15px 0;"
+        >
+
+
+        <label style="display:block;margin-bottom:5px;font-weight:600;">
+          ตั้งรหัสผ่าน
+        </label>
+
+        <input
+          id="regPassword"
+          type="password"
+          class="swal2-input"
+          placeholder="อย่างน้อย 8 ตัวอักษร"
+          autocomplete="new-password"
+          style="width:100%;margin:0 0 15px 0;"
+        >
+
+
+        <label style="display:block;margin-bottom:5px;font-weight:600;">
+          ยืนยันรหัสผ่าน
+        </label>
+
+        <input
+          id="regConfirmPassword"
+          type="password"
+          class="swal2-input"
+          placeholder="กรอกรหัสผ่านอีกครั้ง"
+          autocomplete="new-password"
+          style="width:100%;margin:0;"
+        >
+
+
+        <div style="
+          margin-top:15px;
+          padding:12px;
+          background:#eef2ff;
+          border-radius:12px;
+          color:#475569;
+          font-size:13px;
+          line-height:1.7;
+        ">
+          Username สำหรับนักเรียนจะใช้
+          <b>รหัสนักเรียน</b><br>
+          <b>สมัครได้เพียง 1 บัญชีต่อรหัสนักเรียน</b><br>
+          หากเคยสมัครแล้ว ให้เข้าสู่ระบบหรือติดต่อผู้ดูแลระบบเพื่อรีเซ็ตรหัสผ่าน<br>
+          นักเรียนจะสามารถดูคะแนนของตนเองเท่านั้น
+        </div>
+
+      </div>
+    `,
+
+    showCancelButton: true,
+
+    confirmButtonText: '✅ สมัครใช้งาน',
+
+    cancelButtonText: 'ยกเลิก',
+
+    confirmButtonColor: '#4f46e5',
+
+    focusConfirm: false,
+
+
+    preConfirm: () => {
+
+      const studentId =
+        document
+          .getElementById('regStudentId')
+          .value
+          .trim();
+
+      const className =
+        document
+          .getElementById('regClass')
+          .value;
+
+      const fullName =
+        document
+          .getElementById('regFullName')
+          .value
+          .trim();
+
+      const password =
+        document
+          .getElementById('regPassword')
+          .value;
+
+      const confirmPassword =
+        document
+          .getElementById('regConfirmPassword')
+          .value;
+
+
+      if (
+        !studentId ||
+        !className ||
+        !fullName ||
+        !password ||
+        !confirmPassword
+      ) {
+
+        Swal.showValidationMessage(
+          'กรุณากรอกข้อมูลให้ครบทุกช่อง'
+        );
+
+        return false;
+      }
+
+
+      if (password.length < 8) {
+
+        Swal.showValidationMessage(
+          'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'
+        );
+
+        return false;
+      }
+
+
+      if (password !== confirmPassword) {
+
+        Swal.showValidationMessage(
+          'รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน'
+        );
+
+        return false;
+      }
+
+
+      return {
+        studentId: studentId,
+        className: className,
+        fullName: fullName,
+        password: password
+      };
+
+    }
+
+  }).then(result => {
+
+    if (!result.isConfirmed) {
+      return;
+    }
+
+
+    Swal.fire({
+
+      title: 'กำลังตรวจสอบข้อมูล...',
+
+      text: 'ระบบกำลังตรวจสอบข้อมูลนักเรียน',
+
+      allowOutsideClick: false,
+
+      didOpen: () => {
+        Swal.showLoading();
+      }
+
+    });
+
+
+    google.script.run
+
+      .withSuccessHandler(res => {
+
+        if (!res || !res.ok) {
+
+          Swal.fire({
+
+            icon: 'error',
+
+            title: 'สมัครไม่สำเร็จ',
+
+            text:
+              res && res.message
+                ? res.message
+                : 'ไม่สามารถสมัครใช้งานได้'
+
+          });
+
+          return;
+        }
+
+
+        Swal.fire({
+
+          icon: 'success',
+
+          title: 'สมัครใช้งานสำเร็จ 🎉',
+
+          html: `
+            <div style="
+              font-family:Sarabun,sans-serif;
+              line-height:1.8;
+            ">
+
+              Username สำหรับเข้าสู่ระบบคือ
+
+              <div style="
+                font-size:30px;
+                font-weight:bold;
+                color:#4f46e5;
+                margin:15px 0;
+                background:#eef2ff;
+                padding:12px;
+                border-radius:12px;
+              ">
+                ${escapeHtml(res.username)}
+              </div>
+
+              ใช้รหัสผ่านที่นักเรียนตั้งไว้เข้าสู่ระบบ
+
+            </div>
+          `,
+
+          confirmButtonText: '🔐 ไปหน้าเข้าสู่ระบบ',
+
+          confirmButtonColor: '#4f46e5'
+
+        }).then(() => {
+
+          const usernameInput =
+            document.getElementById('loginUsername');
+
+          const passwordInput =
+            document.getElementById('loginPassword');
+
+
+          if (usernameInput) {
+            usernameInput.value =
+              res.username;
+          }
+
+          if (passwordInput) {
+            passwordInput.value = '';
+            passwordInput.focus();
+          }
+
+        });
+
+      })
+
+      .withFailureHandler(err => {
+
+        Swal.fire({
+
+          icon: 'error',
+
+          title: 'สมัครใช้งานไม่สำเร็จ',
+
+          text:
+            err && err.message
+              ? err.message
+              : String(err)
+
+        });
+
+      })
+
+      .registerStudent(
+        result.value
+      );
+
+  });
+
+}
+/* =========================
+   LOGIN
+========================= */
+
+function login() {
+
+  const username =
+    document
+      .getElementById('loginUsername')
+      .value
+      .trim();
+
+  const password =
+    document
+      .getElementById('loginPassword')
+      .value;
+
+
+  if (!username || !password) {
+
+    Swal.fire({
+      icon: 'warning',
+      title: 'กรอกข้อมูลไม่ครบ',
+      text: 'กรุณากรอก Username และ Password'
+    });
+
+    return;
+  }
+
+
+  Swal.fire({
+    title: 'กำลังเข้าสู่ระบบ...',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+
+  google.script.run
+
+    .withSuccessHandler(res => {
+
+      Swal.close();
+
+
+      if (!res.ok) {
+
+        Swal.fire({
+          icon: 'error',
+          title: 'เข้าสู่ระบบไม่สำเร็จ',
+          text: res.message
+        });
+
+        return;
+      }
+
+
+      TOKEN = res.token;
+
+      CURRENT_USER = res.user;
+      // แสดงรูปโปรไฟล์ที่เคยอัปโหลดไว้ เมื่อเข้าสู่ระบบ
+      google.script.run.withSuccessHandler(profile => {
+        if (profile && profile.photoData) setHeaderAvatar(profile.photoData);
+      }).withFailureHandler(() => {}).getMyProfile(TOKEN);
+
+
+      // ซ่อนหน้า Login
+      document
+        .getElementById('loginPage')
+        .classList.add('hidden');
+
+
+      // ==================================
+      // นักเรียน
+      // ==================================
+
+      if (CURRENT_USER.role === 'student') {
+
+        // ห้ามเปิดหน้าครู
+        document
+          .getElementById('appPage')
+          .classList.add('hidden');
+
+
+        document
+          .getElementById('studentPage')
+          .classList.remove('hidden');
+
+
+        document
+          .getElementById('studentHeaderName')
+          .textContent =
+            CURRENT_USER.fullName || '';
+
+
+        // โหลดเฉพาะข้อมูลตัวเอง
+        loadStudentPortal();
+
+        return;
+      }
+
+
+      // ==================================
+      // Admin / ครู / ฝ่ายปกครอง
+      // ==================================
+
+      document
+        .getElementById('studentPage')
+        .classList.add('hidden');
+
+
+      document
+        .getElementById('appPage')
+        .classList.remove('hidden');
+
+
+      document
+        .getElementById('currentUserName')
+        .textContent =
+          CURRENT_USER.fullName;
+
+
+      document
+        .getElementById('currentUserRole')
+        .textContent =
+          roleName(
+            CURRENT_USER.role
+          );
+// แสดงไอคอนตามประเภทบัญชี
+document
+  .getElementById('currentUserIcon')
+  .textContent =
+    roleIcon(CURRENT_USER.role);
+
+      if (
+        CURRENT_USER.role === 'admin'
+      ) {
+
+        document
+          .getElementById('adminSection')
+          .classList.remove('hidden');
+
+      }
+
+
+      updateRoleUI();
+      setupAppMainMenu();
+
+      loadDashboard();
+
+    })
+
+    .withFailureHandler(showError)
+
+    .login(
+      username,
+      password
+    );
+
+}
+function loadStudentPortal() {
+
+  google.script.run
+
+    .withSuccessHandler(res => {
+
+      if (!res || !res.ok) {
+
+        Swal.fire({
+          icon: 'error',
+          title: 'โหลดข้อมูลไม่สำเร็จ',
+          text: 'ไม่สามารถโหลดข้อมูลนักเรียนได้'
+        });
+
+        return;
+      }
+
+
+      const student =
+        res.student || {};
+
+
+      document
+        .getElementById('myStudentName')
+        .textContent =
+          student.name || '-';
+
+
+      document
+        .getElementById('myStudentId')
+        .textContent =
+          student.studentId || '-';
+
+
+      document
+        .getElementById('myStudentClass')
+        .textContent =
+          student.className || '-';
+
+
+      document
+        .getElementById('myBaseScore')
+        .textContent =
+          Number(res.baseScore || 100);
+
+
+      document
+        .getElementById('myPositiveScore')
+        .textContent =
+          '+' + Number(res.positive || 0);
+
+
+      document
+        .getElementById('myNegativeScore')
+        .textContent =
+          '-' + Number(res.negative || 0);
+
+
+      const currentScore =
+        Number(res.currentScore || 0);
+
+
+      document
+        .getElementById('myCurrentScore')
+        .textContent =
+          currentScore;
+
+
+      // แจ้งข้อจำกัดหากเคยถูกหักคะแนนความผิดหมวด 3
+      const serious = (res.transactions || []).some(t =>
+        t.type === 'serious' || /^M3-/.test(String(t.reasonId || ''))
+      );
+      const actionNote = document.getElementById('mySeriousNote');
+      if (actionNote) {
+        actionNote.classList.toggle('hidden', !serious);
+      }
+
+      // สถานะ
+      const statusBox =
+        document.getElementById(
+          'myBehaviorStatus'
+        );
+
+
+      if (currentScore >= 71) {
+
+  statusBox.textContent =
+    '🟢 ปกติ — พฤติกรรมเป็นไปตามสถานศึกษากำหนด';
+
+  statusBox.className =
+    'text-xl font-bold mt-2 text-emerald-600';
+
+} else if (currentScore >= 51) {
+
+  statusBox.textContent =
+    '🟡 เฝ้าระวัง — ว่ากล่าวตักเตือน เชิญผู้ปกครอง';
+
+  statusBox.className =
+    'text-xl font-bold mt-2 text-yellow-600';
+
+} else {
+
+  statusBox.textContent =
+    '🔴 เสี่ยง — ทำกิจกรรมบำเพ็ญประโยชน์';
+
+  statusBox.className =
+    'text-xl font-bold mt-2 text-red-600';
+
+}
+// =====================================
+// แนวทางดำเนินการตามคะแนนคงเหลือ
+// =====================================
+
+const actionBox =
+  document.getElementById('myBehaviorAction');
+
+
+if (currentScore <= 0) {
+
+  actionBox.textContent =
+    '0 คะแนน — พิจารณาหาสถานศึกษาที่เหมาะสมให้กับนักเรียนต่อไป';
+
+  actionBox.className =
+    'text-lg font-bold mt-2 text-red-700';
+
+
+} else if (currentScore <= 20) {
+
+  actionBox.textContent =
+    '20 คะแนน — ทำกิจกรรมเพื่อปรับเปลี่ยนพฤติกรรม';
+
+  actionBox.className =
+    'text-lg font-bold mt-2 text-red-600';
+
+
+} else if (currentScore <= 50) {
+
+  actionBox.textContent =
+    '50 คะแนน — แจ้งผู้ปกครองรับทราบ หาแนวทางแก้ไขร่วมกัน และทำกิจกรรมบำเพ็ญประโยชน์ต่อตนเอง สถานศึกษา หรือสังคม';
+
+  actionBox.className =
+    'text-lg font-bold mt-2 text-red-600';
+
+
+} else if (currentScore <= 60) {
+
+  actionBox.textContent =
+    '60 คะแนน — ทำทัณฑ์บน แจ้งผู้ปกครองรับทราบ และหาแนวทางแก้ไขร่วมกัน';
+
+  actionBox.className =
+    'text-lg font-bold mt-2 text-orange-600';
+
+
+} else if (currentScore <= 70) {
+
+  actionBox.textContent =
+    '70 คะแนน — ว่ากล่าวตักเตือน และเชิญผู้ปกครองมาพบ';
+
+  actionBox.className =
+    'text-lg font-bold mt-2 text-yellow-600';
+
+
+} else {
+
+  actionBox.textContent =
+    'ยังไม่ถึงเกณฑ์ดำเนินการ';
+
+  actionBox.className =
+    'text-lg font-bold mt-2 text-emerald-600';
+
+}
+
+      // ============================
+      // ประวัติของนักเรียนคนนี้
+      // ============================
+
+      const container =
+        document.getElementById(
+          'myTransactionList'
+        );
+
+      container.innerHTML = '';
+
+
+      const transactions =
+        res.transactions || [];
+
+
+      if (!transactions.length) {
+
+        container.innerHTML = `
+
+          <div class="
+            text-center
+            text-slate-400
+            py-8
+          ">
+            ยังไม่มีประวัติคะแนน
+          </div>
+
+        `;
+
+        return;
+      }
+
+
+      transactions
+        .slice()
+        .reverse()
+        .forEach(t => {
+
+          const score =
+            Number(t.score || 0);
+
+
+          const card =
+            document.createElement(
+              'div'
+            );
+
+
+          card.className =
+            'border rounded-2xl p-4 bg-white';
+
+
+          card.innerHTML = `
+
+            <div class="
+              flex
+              justify-between
+              items-start
+              gap-3
+            ">
+
+              <div class="flex-1">
+
+                <div class="
+                  text-sm
+                  text-slate-500
+                ">
+                  📅 ${escapeHtml(t.date || '-')}
+                </div>
+
+
+                <div class="
+                  font-semibold
+                  mt-1
+                ">
+                  ${escapeHtml(t.reason || '-')}
+                </div>
+
+
+                ${
+                  t.note
+                    ? `
+                      <div class="
+                        text-sm
+                        text-slate-500
+                        mt-2
+                      ">
+                        📝 ${escapeHtml(t.note)}
+                      </div>
+                    `
+                    : ''
+                }
+
+
+                <div class="
+                  text-xs
+                  text-slate-400
+                  mt-2
+                ">
+                  ผู้บันทึก:
+                  ${escapeHtml(
+                    t.recorderName ||
+                    t.username ||
+                    '-'
+                  )}
+                </div>
+
+              </div>
+
+
+              <div class="
+                text-2xl
+                font-bold
+                ${
+                  score > 0
+                    ? 'text-emerald-600'
+                    : 'text-red-600'
+                }
+              ">
+
+                ${
+                  score > 0
+                    ? '+'
+                    : ''
+                }${score}
+
+              </div>
+
+            </div>
+
+          `;
+
+
+          container.appendChild(
+            card
+          );
+
+        });
+
+    })
+
+    .withFailureHandler(showError)
+
+    .getStudentPortalData(
+      TOKEN
+    );
+
+}
+
+function logout() {
+
+  TOKEN = '';
+
+  CURRENT_USER = null;
+
+  STUDENTS = [];
+
+  TRANSACTIONS = [];
+
+  USERS = [];
+
+
+  const staffSlot = document.getElementById('staffProfileSlot');
+  const studentSlot = document.getElementById('studentProfileSlot');
+  if (staffSlot) staffSlot.replaceChildren();
+  if (studentSlot) studentSlot.replaceChildren();
+  const studentAvatar = document.getElementById('studentHeaderAvatar');
+  if (studentAvatar) { studentAvatar.removeAttribute('src'); studentAvatar.classList.add('hidden'); }
+  const accountIcon = document.getElementById('currentUserIcon');
+  if (accountIcon) { accountIcon.style.backgroundImage = ''; }
+  // ซ่อนหน้าครู
+  const appPage =
+    document.getElementById('appPage');
+
+  if (appPage) {
+    appPage.classList.add('hidden');
+  }
+
+
+  // ซ่อนหน้านักเรียน
+  const overlay = document.getElementById('studentProfileOverlay');
+  if (overlay) overlay.classList.add('hidden');
+  const studentPage =
+    document.getElementById('studentPage');
+
+  if (studentPage) {
+    studentPage.classList.add('hidden');
+  }
+
+
+  // กลับหน้า Login
+  const loginPage =
+    document.getElementById('loginPage');
+
+  if (loginPage) {
+    loginPage.classList.remove('hidden');
+  }
+
+
+  // ล้าง Username / Password
+  const usernameInput =
+    document.getElementById('loginUsername');
+
+  const passwordInput =
+    document.getElementById('loginPassword');
+
+  if (usernameInput) {
+    usernameInput.value = '';
+  }
+
+  if (passwordInput) {
+    passwordInput.value = '';
+  }
+
+}
+
+
+/* =========================
+   ROLE
+========================= */
+
+function updateRoleUI() {
+
+  const seriousOption =
+    [...document.querySelectorAll('#recordType option')]
+    .find(x => x.value === 'serious');
+
+  if (
+    CURRENT_USER &&
+    !['admin','discipline'].includes(CURRENT_USER.role)
+  ) {
+    seriousOption.disabled = true;
+  } else {
+    seriousOption.disabled = false;
+  }
+
+}
+
+
+function roleName(role) {
+
+  if (role === 'admin') {
+    return 'ผู้ดูแลระบบ';
+  }
+
+  if (role === 'discipline') {
+    return 'ครูฝ่ายปกครอง';
+  }
+
+  if (role === 'teacher') {
+    return 'ครูผู้สอน';
+  }
+
+  if (role === 'student') {
+    return 'นักเรียน';
+  }
+
+  return role || '-';
+
+}
+function roleIcon(role) {
+
+  if (role === 'admin') {
+    return '👑';
+  }
+
+  if (role === 'discipline') {
+    return '🛡️';
+  }
+
+  if (role === 'teacher') {
+    return '👨‍🏫';
+  }
+
+  if (role === 'student') {
+    return '🎓';
+  }
+
+  return '👤';
+}
+
+/* =========================
+   CONNECTION
+========================= */
+
+function testConnection() {
+
+  setConnection('loading');
+
+  google.script.run
+
+    .withSuccessHandler(res => {
+
+      setConnection('online');
+
+      document.getElementById('syncStatus').textContent =
+        'ออนไลน์';
+
+      document.getElementById('lastSync').textContent =
+        new Date().toLocaleString('th-TH');
+
+      Swal.fire({
+        icon: 'success',
+        title: 'เชื่อมต่อสำเร็จ',
+        text: 'เชื่อมต่อ Google Sheet ได้แล้ว'
+      });
+
+    })
+
+    .withFailureHandler(err => {
+
+      setConnection('offline');
+
+      showError(err);
+
+    })
+
+    .testConnection(TOKEN);
+
+}
+
+
+function setConnection(status) {
+
+  const dot =
+    document.getElementById('connectionDot');
+
+  const text =
+    document.getElementById('connectionText');
+
+  dot.className = 'status-dot';
+
+  if (status === 'online') {
+
+    dot.classList.add('status-online');
+
+    text.textContent = 'Google Sheet ออนไลน์';
+
+  } else if (status === 'offline') {
+
+    dot.classList.add('status-offline');
+
+    text.textContent = 'Google Sheet ออฟไลน์';
+
+  } else {
+
+    dot.classList.add('status-loading');
+
+    text.textContent = 'กำลังโหลดข้อมูล';
+
+  }
+
+}
+
+
+/* =========================
+   LOAD DATA
+========================= */
+
+function loadDashboard() {
+
+  setConnection('loading');
+
+  google.script.run
+
+    .withSuccessHandler(res => {
+
+      STUDENTS = res.students || [];
+      const scopedTeacher = CURRENT_USER && CURRENT_USER.role === 'teacher';
+      if (scopedTeacher && res.allowedClass) CURRENT_USER.className = res.allowedClass;
+      const studentMenu = document.querySelector('[data-app-page-target="students"] .font-bold');
+      const chartMenu = document.querySelector('[data-app-page-target="chart"] .font-bold');
+      if (studentMenu) studentMenu.textContent = scopedTeacher ? 'รายชื่อนักเรียน ' + (CURRENT_USER.className || '') : 'รายชื่อนักเรียนทั้งหมด';
+      if (chartMenu) chartMenu.textContent = scopedTeacher ? 'กราฟคะแนน ' + (CURRENT_USER.className || '') : 'กราฟคะแนนความประพฤติ';
+
+      TRANSACTIONS = res.transactions || [];
+
+      USERS = res.users || [];
+
+      populateChartClasses();
+      populateClasses();
+     
+      populateExportClasses();
+
+populateHistoryClasses();
+
+populateHistoryReasons();
+
+populateStudentSelect();
+
+renderStudents();
+
+renderHistory();
+
+      renderSummary();
+
+      renderChart();
+
+      renderUsers();
+
+      renderReasons();
+
+      setToday();
+
+      setConnection('online');
+
+      document.getElementById('syncStatus').textContent =
+        'ข้อมูลเป็นปัจจุบัน';
+
+      document.getElementById('lastSync').textContent =
+        new Date().toLocaleString('th-TH');
+
+    })
+
+    .withFailureHandler(err => {
+
+      setConnection('offline');
+
+      showError(err);
+
+    })
+
+    .getDashboardData(TOKEN);
+
+}
+
+
+/* =========================
+   STUDENT SCORE
+========================= */
+
+function getStudentScore(studentKey) {
+
+  return BASE_SCORE +
+    TRANSACTIONS
+      .filter(t => t.studentKey === studentKey)
+      .reduce((sum,t) => sum + Number(t.score || 0), 0);
+
+}
+
+
+function getStudentPositive(studentKey) {
+
+  return TRANSACTIONS
+    .filter(t => t.studentKey === studentKey && Number(t.score) > 0)
+    .reduce((sum,t) => sum + Number(t.score), 0);
+
+}
+
+
+function getStudentNegative(studentKey) {
+
+  return TRANSACTIONS
+    .filter(t => t.studentKey === studentKey && Number(t.score) < 0)
+    .reduce((sum,t) => sum + Math.abs(Number(t.score)), 0);
+
+}
+
+
+/* =========================
+   STATUS
+========================= */
+
+function getStatus(score) {
+
+  if (score <= 0) {
+    return 'พิจารณาหาสถานที่ศึกษาที่เหมาะสม';
+  }
+
+  if (score <= 20) {
+    return 'ทำกิจกรรมเพื่อปรับเปลี่ยนพฤติกรรม';
+  }
+
+  if (score <= 50) {
+    return 'ทำกิจกรรมบำเพ็ญประโยชน์และปรับเปลี่ยนพฤติกรรม';
+  }
+
+  if (score <= 60) {
+    return 'ทำทัณฑ์บนและแจ้งผู้ปกครอง';
+  }
+
+  if (score <= 70) {
+    return 'ว่ากล่าวตักเตือน เชิญผู้ปกครอง';
+  }
+
+  return 'ปกติ';
+
+}
+function getRiskStatus(score) {
+
+  score = Number(score || 0);
+
+  if (score >= 71) {
+    return {
+      text: 'ปกติ',
+      color: 'green'
+    };
+  }
+
+  if (score >= 51) {
+    return {
+      text: 'เฝ้าระวัง',
+      color: 'yellow'
+    };
+  }
+
+  return {
+    text: 'เสี่ยง',
+    color: 'red'
+  };
+
+}
+
+/* =========================
+   STUDENT LIST
+========================= */
+
+function populateClasses() {
+
+  const classes =
+    [...new Set(
+      STUDENTS
+        .map(s => s.className)
+        .filter(Boolean)
+    )];
+
+  classes.sort((a, b) => {
+
+    const getValue = (name) => {
+      const m = String(name || '').match(/(\d+)\/(\d+)/);
+
+      if (!m) return 99999;
+
+      return Number(m[1]) * 100 + Number(m[2]);
+    };
+
+    return getValue(a) - getValue(b);
+  });
+
+  // ตัวกรองรายชื่อนักเรียนด้านบน
+  const classFilter =
+    document.getElementById('classFilter');
+
+  if (classFilter) {
+
+    const scopedTeacher = CURRENT_USER && CURRENT_USER.role === 'teacher';
+    classFilter.replaceChildren();
+    if (!scopedTeacher) classFilter.add(new Option('ทุกระดับชั้น', ''));
+
+    classes.forEach(className => {
+
+      const option =
+        document.createElement('option');
+
+      option.value = className;
+      option.textContent = className;
+
+      classFilter.appendChild(option);
+    });
+    if (scopedTeacher) {
+      if (classes.length) classFilter.value = classes[0];
+      classFilter.disabled = true;
+    } else {
+      classFilter.disabled = false;
+    }
+  }
+}
+function populateExportClasses() {
+
+  const select =
+    document.getElementById('exportClassFilter');
+
+  if (!select) {
+    return;
+  }
+
+  const classes =
+    [...new Set(
+      STUDENTS
+        .map(s => s.className)
+        .filter(Boolean)
+    )];
+
+  classes.sort((a, b) => {
+
+    const getValue = name => {
+
+      const m =
+        String(name || '')
+          .match(/(\d+)\/(\d+)/);
+
+      if (!m) {
+        return 99999;
+      }
+
+      return (
+        Number(m[1]) * 100 +
+        Number(m[2])
+      );
+
+    };
+
+    return getValue(a) - getValue(b);
+
+  });
+
+  select.innerHTML =
+    '<option value="">ทุกระดับชั้น</option>';
+
+  classes.forEach(className => {
+
+    const option =
+      document.createElement('option');
+
+    option.value =
+      className;
+
+    option.textContent =
+      className;
+
+    select.appendChild(option);
+
+  });
+
+}
+function populateHistoryClasses() {
+
+  const select =
+    document.getElementById(
+      'historyClassFilter'
+    );
+
+  if (!select) {
+    return;
+  }
+
+
+  const classes =
+    [...new Set(
+      STUDENTS
+        .map(s => s.className)
+        .filter(Boolean)
+    )];
+
+
+  classes.sort((a, b) => {
+
+    const getValue = name => {
+
+      const match =
+        String(name || '')
+          .match(/(\d+)\/(\d+)/);
+
+      if (!match) {
+        return 99999;
+      }
+
+      return (
+        Number(match[1]) * 100 +
+        Number(match[2])
+      );
+    };
+
+
+    return (
+      getValue(a) -
+      getValue(b)
+    );
+
+  });
+
+
+  select.innerHTML =
+    '<option value="">ทุกระดับชั้น</option>';
+
+
+  classes.forEach(className => {
+
+    const option =
+      document.createElement('option');
+
+    option.value =
+      className;
+
+    option.textContent =
+      className;
+
+    select.appendChild(option);
+
+  });
+
+}
+
+function populateStudentSelect() {
+
+  const classSelect =
+    document.getElementById('recordClass');
+
+  const studentSelect =
+    document.getElementById('recordStudent');
+
+  if (!classSelect || !studentSelect) {
+    return;
+  }
+
+  classSelect.innerHTML =
+    '<option value="">-- เลือกระดับชั้น --</option>';
+
+  studentSelect.innerHTML =
+    '<option value="">-- กรุณาเลือกระดับชั้นก่อน --</option>';
+
+  const classes =
+    [...new Set(
+      STUDENTS
+        .map(s => s.className)
+        .filter(Boolean)
+    )];
+
+  classes.sort((a, b) => {
+
+    const getValue = (name) => {
+
+      const match =
+        String(name || '').match(/(\d+)\/(\d+)/);
+
+      if (!match) {
+        return 99999;
+      }
+
+      return (
+        Number(match[1]) * 100 +
+        Number(match[2])
+      );
+    };
+
+    return getValue(a) - getValue(b);
+  });
+
+  classes.forEach(className => {
+
+    const option =
+      document.createElement('option');
+
+    option.value = className;
+    option.textContent = className;
+
+    classSelect.appendChild(option);
+  });
+}
+
+
+function filterStudentsByClass() {
+
+  const classSelect =
+    document.getElementById('recordClass');
+
+  const studentSelect =
+    document.getElementById('recordStudent');
+
+  if (!classSelect || !studentSelect) {
+    return;
+  }
+
+  const selectedClass =
+    classSelect.value;
+
+  studentSelect.innerHTML = '';
+
+  if (!selectedClass) {
+
+    studentSelect.innerHTML =
+      '<option value="">-- กรุณาเลือกระดับชั้นก่อน --</option>';
+
+    resetStudentScorePreview();
+    updateSeriousScoreRestriction();
+
+    return;
+  }
+
+  studentSelect.innerHTML =
+    '<option value="">-- เลือกนักเรียน --</option>';
+
+  const studentsInClass =
+    STUDENTS
+      .filter(student =>
+        student.className === selectedClass
+      )
+      .sort((a, b) => {
+
+        const noA =
+          parseInt(a.no, 10) || 999;
+
+        const noB =
+          parseInt(b.no, 10) || 999;
+
+        return noA - noB;
+      });
+
+  studentsInClass.forEach(student => {
+
+    const option =
+      document.createElement('option');
+
+    option.value =
+      student.key;
+
+    option.textContent =
+      `เลขที่ ${student.no || '-'} | ` +
+      `${student.studentId || '-'} | ` +
+      `${student.name}`;
+
+    studentSelect.appendChild(option);
+  });
+
+  resetStudentScorePreview();
+  updateSeriousScoreRestriction();
+}
+
+function resetStudentScorePreview() {
+
+  const current =
+    document.getElementById('currentScorePreview');
+
+  const after =
+    document.getElementById('afterScorePreview');
+
+  if (current) {
+    current.textContent = '-';
+  }
+
+  if (after) {
+    after.textContent = '-';
+  }
+}
+
+function renderStudents() {
+
+  const q =
+    document.getElementById('studentSearch').value
+      .toLowerCase()
+      .trim();
+
+  const classFilter =
+    document.getElementById('classFilter').value;
+   
+    const statusFilter =
+  document.getElementById('statusFilter').value;
+
+
+ const filtered =
+  STUDENTS.filter(s => {
+
+    const text =
+      `${s.name} ${s.studentId} ${s.className} ${s.no}`
+        .toLowerCase();
+
+    // ค้นหาชื่อ / รหัส / ชั้น / เลขที่
+    const passSearch =
+      !q || text.includes(q);
+
+    // กรองระดับชั้น
+    const passClass =
+      !classFilter ||
+      s.className === classFilter;
+
+
+    // หาคะแนนคงเหลือของนักเรียนคนนี้
+    const score =
+      getStudentScore(s.key);
+
+
+    // กำหนดสถานะจากคะแนน
+    let studentStatus = '';
+
+    if (score >= 71) {
+
+      studentStatus = 'normal';
+
+    } else if (score >= 51) {
+
+      studentStatus = 'watch';
+
+    } else {
+
+      studentStatus = 'risk';
+
+    }
+
+
+    // ตรวจว่าตรงกับสถานะที่เลือกหรือไม่
+    const passStatus =
+      !statusFilter ||
+      studentStatus === statusFilter;
+
+
+    // ต้องผ่านทั้ง 3 ตัวกรอง
+    return (
+      passSearch &&
+      passClass &&
+      passStatus
+    );
+
+  });
+
+
+  document.getElementById('totalStudents').textContent =
+    STUDENTS.length;
+
+  document.getElementById('visibleStudents').textContent =
+    filtered.length;
+
+
+  const body =
+    document.getElementById('studentTableBody');
+
+  body.innerHTML = '';
+
+
+  filtered.forEach(s => {
+
+    // คะแนนคงเหลือ
+    const score =
+      getStudentScore(s.key);
+
+
+    // สถานะ
+    let statusText = '';
+    let statusClass = '';
+
+    if (score >= 71) {
+
+      statusText = '🟢 ปกติ';
+
+      statusClass =
+        'bg-emerald-100 text-emerald-700';
+
+    } else if (score >= 51) {
+
+      statusText = '🟡 เฝ้าระวัง';
+
+      statusClass =
+        'bg-yellow-100 text-yellow-700';
+
+    } else {
+
+      statusText = '🔴 เสี่ยง';
+
+      statusClass =
+        'bg-red-100 text-red-700';
+
+    }
+
+
+   // ==============================
+// ข้อความแสดงในคอลัมน์ "รายการ"
+// แสดงตามสถานะ ไม่แสดงรายละเอียดความผิด
+// ==============================
+
+let latestText = '';
+
+if (score >= 71) {
+
+  // 🟢 ปกติ
+  latestText = `
+    <div class="text-sm font-medium text-emerald-700">
+      พฤติกรรมเป็นไปตามสถานศึกษากำหนด
+    </div>
+  `;
+
+} else if (score >= 51) {
+
+  // 🟡 เฝ้าระวัง
+  latestText = `
+    <div class="text-sm font-medium text-yellow-700">
+      ว่ากล่าวตักเตือน เชิญผู้ปกครอง
+    </div>
+  `;
+
+} else {
+
+  // 🔴 เสี่ยง
+  latestText = `
+    <div class="text-sm font-medium text-red-700">
+      ทำกิจกรรมบำเพ็ญประโยชน์
+    </div>
+  `;
+
+}
+
+
+    const tr =
+      document.createElement('tr');
+
+    tr.className =
+      'border-b hover:bg-slate-50';
+
+
+    tr.innerHTML = `
+
+      <!-- เลขที่ -->
+      <td class="p-3">
+        ${escapeHtml(s.no)}
+      </td>
+
+
+      <!-- รหัสนักเรียน -->
+      <td class="p-3">
+        ${escapeHtml(s.studentId || '-')}
+      </td>
+
+
+      <!-- ชื่อ -->
+      <td class="p-3 font-medium">
+        ${escapeHtml(s.name)}
+      </td>
+
+
+      <!-- ชั้น -->
+      <td class="p-3">
+        ${escapeHtml(s.className)}
+      </td>
+
+
+      <!-- คะแนน -->
+      <td class="
+        p-3
+        text-center
+        font-bold
+     ${ 
+  score <= 50
+    ? 'text-red-600'
+    : score <= 70
+    ? 'text-yellow-600'
+    : 'text-emerald-600'
+}
+      ">
+        ${score}
+      </td>
+
+
+      <!-- สถานะ -->
+      <td class="p-3 text-center">
+
+        <span class="
+          inline-flex
+          px-3 py-1
+          rounded-full
+          text-xs
+          font-semibold
+          ${statusClass}
+        ">
+          ${statusText}
+        </span>
+
+      </td>
+
+
+      <!-- รายการล่าสุด -->
+      <td class="p-3">
+        ${latestText}
+      </td>
+
+
+      <!-- จัดการ -->
+      <td class="p-3 text-center">
+
+        <button
+          ${CURRENT_USER && CURRENT_USER.role === 'teacher' ? 'disabled hidden' : ''} onclick='showStudentHistory(${JSON.stringify(s.key)})'
+          class="
+            text-indigo-600
+            hover:underline
+            font-medium
+          ">
+
+          ประวัติ
+
+        </button>
+
+      </td>
+
+    `;
+
+
+    body.appendChild(tr);
+
+  });
+
+
+  renderChart(filtered);
+
+}
+
+
+/* =========================
+   RECORD RULE
+========================= */
+
+function renderReasons() {
+
+  const type =
+    document.getElementById('recordType').value;
+
+  const select =
+    document.getElementById('recordReason');
+
+  const hoursBox =
+    document.getElementById('hoursBox');
+
+  select.innerHTML = '';
+
+  const rules =
+    RULES[type] || [];
+
+  rules.forEach(r => {
+
+    select.innerHTML += `
+      <option value="${r.id}">
+        ${escapeHtml(r.text)} (${r.score > 0 ? '+' : ''}${r.score})
+      </option>
+    `;
+
+  });
+
+  const selected =
+    rules[0];
+
+  if (selected && selected.hours) {
+    hoursBox.classList.remove('hidden');
+  } else {
+    hoursBox.classList.add('hidden');
+  }
+
+  updateScorePreview();
+
+}
+function populateHistoryReasons() {
+
+  const typeSelect =
+    document.getElementById('historyTypeFilter');
+
+  const reasonSelect =
+    document.getElementById('historyReasonFilter');
+
+  if (!typeSelect || !reasonSelect) {
+    return;
+  }
+
+  const type =
+    typeSelect.value;
+
+  reasonSelect.innerHTML =
+    '<option value="">ทุกรายการ</option>';
+
+  // ถ้ายังไม่ได้เลือกประเภท
+  // ให้แสดงรายการทุกประเภท
+  if (!type) {
+
+    const allTypes = [
+      'positive',
+      'minor',
+      'moderate',
+      'serious'
+    ];
+
+    allTypes.forEach(typeName => {
+
+      const rules =
+        RULES[typeName] || [];
+
+      rules.forEach(rule => {
+
+        const option =
+          document.createElement('option');
+
+        option.value =
+          rule.text;
+
+        option.textContent =
+          rule.text;
+
+        reasonSelect.appendChild(option);
+
+      });
+
+    });
+
+    return;
+  }
+
+  // ถ้าเลือกประเภทแล้ว
+  // แสดงเฉพาะรายการประเภทนั้น
+  const rules =
+    RULES[type] || [];
+
+  rules.forEach(rule => {
+
+    const option =
+      document.createElement('option');
+
+    option.value =
+      rule.text;
+
+    option.textContent =
+      rule.text;
+
+    reasonSelect.appendChild(option);
+
+  });
+
+}
+
+/* ตรวจประวัติหมวด 3 ของนักเรียนจากข้อมูลที่โหลดมา */
+function hasSeriousOffense(studentKey) {
+  return !!studentKey && TRANSACTIONS.some(t =>
+    String(t.studentKey) === String(studentKey) &&
+    (t.type === 'serious' || /^M3-/.test(String(t.reasonId || '')))
+  );
+}
+
+function updateSeriousScoreRestriction() {
+  const studentKey = document.getElementById('recordStudent').value;
+  const typeSelect = document.getElementById('recordType');
+  const positiveOption = typeSelect.querySelector('option[value="positive"]');
+  const warning = document.getElementById('seriousScoreWarning');
+  const restricted = hasSeriousOffense(studentKey);
+
+  if (positiveOption) positiveOption.disabled = restricted;
+  if (warning) warning.classList.toggle('hidden', !restricted);
+
+  // หากกำลังเลือกเพิ่มคะแนนแล้วเปลี่ยนเป็นนักเรียนหมวด 3 ให้สลับเป็นหมวด 1
+  if (restricted && typeSelect.value === 'positive') {
+    typeSelect.value = 'minor';
+    renderReasons();
+  }
+  return restricted;
+}
+
+function getSelectedRule() {
+
+  const type =
+    document.getElementById('recordType').value;
+
+  const reasonId =
+    document.getElementById('recordReason').value;
+
+  return (RULES[type] || [])
+    .find(r => r.id === reasonId);
+
+}
+
+
+function updateScorePreview() {
+
+  const selectedRule =
+    getSelectedRule();
+
+  const studentKey =
+    document.getElementById('recordStudent').value;
+
+  if (!selectedRule) {
+    return;
+  }
+
+  let score =
+    selectedRule.score;
+
+  if (selectedRule.hours) {
+
+    const hours =
+      Math.max(
+        1,
+        Number(
+          document.getElementById('recordHours').value || 1
+        )
+      );
+
+    score =
+      hours * 5;
+
+    document.getElementById('hoursBox').classList.remove('hidden');
+
+  } else {
+
+    document.getElementById('hoursBox').classList.add('hidden');
+
+  }
+
+  document.getElementById('transactionScorePreview').textContent =
+    (score > 0 ? '+' : '') + score;
+
+  if (studentKey) {
+
+    const current =
+      getStudentScore(studentKey);
+
+    document.getElementById('currentScorePreview').textContent =
+      current;
+
+    document.getElementById('afterScorePreview').textContent =
+      current + score;
+
+  }
+
+}
+
+
+function showSelectedStudentScore() {
+
+  updateSeriousScoreRestriction();
+  updateScorePreview();
+
+}
+
+
+/* =========================
+   SAVE
+========================= */
+
+function saveTransaction() {
+  if (!CURRENT_USER || !['admin', 'discipline'].includes(CURRENT_USER.role)) {
+    Swal.fire('ไม่มีสิทธิ์บันทึก', 'เฉพาะครูฝ่ายปกครองและแอดมินเท่านั้น', 'error');
+    return;
+  }
+
+
+  const studentKey =
+    document.getElementById('recordStudent').value;
+
+  const date =
+    document.getElementById('recordDate').value;
+
+  const type =
+    document.getElementById('recordType').value;
+
+  const rule =
+    getSelectedRule();
+
+  const note =
+    document.getElementById('recordNote').value.trim();
+
+  if (type === 'positive' && hasSeriousOffense(studentKey)) {
+    Swal.fire({
+      icon: 'error',
+      title: 'ไม่สามารถเพิ่มคะแนนได้',
+      text: 'นักเรียนมีประวัติความผิดหมวด 3 ไม่สามารถเพิ่มคะแนนหรือหักล้างความผิดหมวด 3 ได้'
+    });
+    updateSeriousScoreRestriction();
+    return;
+  }
+
+  if (!studentKey || !date || !rule) {
+
+    Swal.fire({
+      icon: 'warning',
+      title: 'ข้อมูลไม่ครบ',
+      text: 'กรุณาเลือกนักเรียน วันที่ และรายการ'
+    });
+
+    return;
+  }
+
+  let score =
+    rule.score;
+
+  let hours = '';
+
+  if (rule.hours) {
+
+    hours =
+      Math.max(
+        1,
+        Number(
+          document.getElementById('recordHours').value || 1
+        )
+      );
+
+    score = hours * 5;
+
+  }
+
+  const student =
+    STUDENTS.find(s => s.key === studentKey);
+
+  const current =
+    getStudentScore(studentKey);
+
+  const after =
+    current + score;
+
+  Swal.fire({
+
+    icon: 'question',
+
+    title: 'ยืนยันการบันทึก',
+
+    html: `
+      <div style="text-align:left">
+        <b>นักเรียน:</b> ${escapeHtml(student.name)}<br>
+        <b>รายการ:</b> ${escapeHtml(rule.text)}<br>
+        <b>คะแนนปัจจุบัน:</b> ${current}<br>
+        <b>เปลี่ยนแปลง:</b> ${score > 0 ? '+' : ''}${score}<br>
+        <b>คะแนนหลังรายการ:</b> ${after}
+      </div>
+    `,
+
+    showCancelButton: true,
+
+    confirmButtonText: 'ยืนยันบันทึก',
+
+    cancelButtonText: 'ยกเลิก'
+
+  }).then(result => {
+
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    google.script.run
+
+      .withSuccessHandler(() => {
+
+        Swal.fire({
+          icon: 'success',
+          title: 'บันทึกสำเร็จ',
+          timer: 1300,
+          showConfirmButton: false
+        });
+
+        document.getElementById('recordNote').value = '';
+
+        loadDashboard();
+
+      })
+
+      .withFailureHandler(showError)
+
+      .saveTransaction(TOKEN, {
+
+        studentKey,
+
+        date,
+
+        type,
+
+        reasonId: rule.id,
+
+        reason: rule.text,
+
+        score,
+
+        hours,
+
+        note
+
+      });
+
+  });
+
+}
+
+
+/* =========================
+   HISTORY
+========================= */
+
+function renderHistory() {
+
+  const q =
+    document
+      .getElementById('historySearch')
+      .value
+      .toLowerCase()
+      .trim();
+
+
+  const type =
+    document
+      .getElementById('historyTypeFilter')
+      .value;
+
+
+  const reason =
+    document
+      .getElementById('historyReasonFilter')
+      .value;
+
+
+  const className =
+    document
+      .getElementById('historyClassFilter')
+      .value;
+
+
+  const filtered =
+    TRANSACTIONS
+      .filter(t => {
+
+        // กรองตามประเภท
+        if (
+          type &&
+          t.type !== type
+        ) {
+          return false;
+        }
+
+
+        // กรองตามรายการ
+        if (
+          reason &&
+          t.reason !== reason
+        ) {
+          return false;
+        }
+
+
+        // กรองตามระดับชั้น
+        if (
+          className &&
+          t.className !== className
+        ) {
+          return false;
+        }
+
+
+        // ค้นหาชื่อนักเรียน / ผู้บันทึก
+        const text =
+          `
+          ${t.studentName || ''}
+          ${t.className || ''}
+          ${t.reason || ''}
+          ${t.recorderName || ''}
+          `
+          .toLowerCase();
+
+
+        if (
+          q &&
+          !text.includes(q)
+        ) {
+          return false;
+        }
+
+
+        return true;
+
+      })
+
+      .slice()
+
+      .reverse();
+// ============================
+// สรุปผลจากตัวกรอง
+// ============================
+
+const totalCount =
+  filtered.length;
+
+
+// นับนักเรียนไม่ซ้ำ
+const uniqueStudents =
+  new Set(
+    filtered.map(t =>
+      t.studentKey ||
+      `${t.studentName}|${t.className}`
+    )
+  );
+
+
+const studentCount =
+  uniqueStudents.size;
+
+
+// รวมคะแนน
+const scoreTotal =
+  filtered.reduce(
+    (sum, t) =>
+      sum + Number(t.score || 0),
+    0
+  );
+
+
+// แสดงจำนวนรายการ
+const totalCountEl =
+  document.getElementById(
+    'historyTotalCount'
+  );
+
+if (totalCountEl) {
+  totalCountEl.textContent =
+    totalCount;
+}
+
+
+// แสดงจำนวนนักเรียน
+const studentCountEl =
+  document.getElementById(
+    'historyStudentCount'
+  );
+
+if (studentCountEl) {
+  studentCountEl.textContent =
+    studentCount;
+}
+
+
+// แสดงคะแนนรวม
+const scoreTotalEl =
+  document.getElementById(
+    'historyScoreTotal'
+  );
+
+if (scoreTotalEl) {
+
+  scoreTotalEl.textContent =
+    scoreTotal > 0
+      ? `+${scoreTotal}`
+      : scoreTotal;
+
+  if (scoreTotal > 0) {
+
+    scoreTotalEl.className =
+      'text-2xl font-bold text-emerald-600';
+
+  } else if (scoreTotal < 0) {
+
+    scoreTotalEl.className =
+      'text-2xl font-bold text-red-600';
+
+  } else {
+
+    scoreTotalEl.className =
+      'text-2xl font-bold text-slate-700';
+
+  }
+
+}
+
+
+  const body =
+    document.getElementById(
+      'historyTableBody'
+    );
+
+  body.innerHTML = '';
+
+  filtered.forEach(t => {
+
+    const score =
+      Number(t.score);
+
+    const canDelete =
+      CURRENT_USER &&
+      ['admin', 'discipline']
+        .includes(CURRENT_USER.role);
+
+    const tr =
+      document.createElement('tr');
+
+    tr.className =
+      'border-b hover:bg-slate-50';
+
+    tr.innerHTML = `
+
+      <td class="p-3">
+        ${escapeHtml(t.date)}
+      </td>
+
+      <td class="p-3">
+        ${escapeHtml(t.no)}
+      </td>
+
+      <td class="p-3">
+        ${escapeHtml(t.studentName)}
+      </td>
+
+      <td class="p-3">
+        ${escapeHtml(t.className)}
+      </td>
+
+      <td class="p-3">
+        ${escapeHtml(t.reason)}
+      </td>
+
+      <td class="
+        p-3
+        text-center
+        font-bold
+        ${
+          score > 0
+            ? 'text-emerald-600'
+            : 'text-red-600'
+        }
+      ">
+
+        ${score > 0 ? '+' : ''}${score}
+
+      </td>
+
+      <td class="p-3">
+
+        <div class="font-medium">
+          ${escapeHtml(
+            t.recorderName ||
+            t.username ||
+            '-'
+          )}
+        </div>
+
+        ${
+          t.username
+            ? `
+              <div class="text-xs text-slate-400">
+                ${escapeHtml(t.username)}
+              </div>
+            `
+            : ''
+        }
+
+      </td>
+
+      <td class="p-3 text-center">
+
+        ${
+          canDelete
+            ? `
+              <button
+                onclick="confirmDeleteTransaction(
+                  '${escapeHtml(
+                    t.transactionId
+                  )}'
+                )"
+                class="
+                  bg-red-50
+                  text-red-600
+                  hover:bg-red-100
+                  px-3
+                  py-2
+                  rounded-lg
+                  font-semibold
+                "
+              >
+                🗑️ ลบ
+              </button>
+            `
+            : `
+              <span class="
+                text-xs
+                text-slate-400
+              ">
+                -
+              </span>
+            `
+        }
+
+      </td>
+
+    `;
+
+    body.appendChild(tr);
+
+  });
+
+}
+
+function clearHistorySearch() {
+
+  const search =
+    document.getElementById('historySearch');
+
+  const typeFilter =
+    document.getElementById('historyTypeFilter');
+
+  const reasonFilter =
+    document.getElementById('historyReasonFilter');
+
+  const classFilter =
+    document.getElementById('historyClassFilter');
+
+
+  if (search) {
+    search.value = '';
+  }
+
+  if (typeFilter) {
+    typeFilter.value = '';
+  }
+
+  if (classFilter) {
+    classFilter.value = '';
+  }
+
+
+  // โหลดรายการทั้งหมดกลับมาใหม่
+  populateHistoryReasons();
+
+
+  if (reasonFilter) {
+    reasonFilter.value = '';
+  }
+
+
+  // แสดงประวัติทั้งหมด
+  renderHistory();
+
+}
+
+function confirmDeleteTransaction(
+  transactionId
+) {
+
+  const transaction =
+    TRANSACTIONS.find(
+      t =>
+        t.transactionId ===
+        transactionId
+    );
+
+  if (!transaction) {
+
+    Swal.fire(
+      'ไม่พบรายการ',
+      'กรุณาโหลดข้อมูลใหม่',
+      'error'
+    );
+
+    return;
+  }
+
+  const score =
+    Number(transaction.score || 0);
+
+  Swal.fire({
+
+    icon: 'warning',
+
+    title: 'ยืนยันการลบรายการ?',
+
+    html: `
+
+      <div style="text-align:left">
+
+        <b>นักเรียน:</b>
+        ${escapeHtml(
+          transaction.studentName
+        )}
+        <br>
+
+        <b>ชั้น:</b>
+        ${escapeHtml(
+          transaction.className
+        )}
+        <br>
+
+        <b>วันที่:</b>
+        ${escapeHtml(
+          transaction.date
+        )}
+        <br><br>
+
+        <b>รายการ:</b><br>
+        ${escapeHtml(
+          transaction.reason
+        )}
+        <br><br>
+
+        <b>คะแนน:</b>
+        <span style="
+          color:${
+            score > 0
+              ? '#059669'
+              : '#dc2626'
+          };
+          font-weight:bold;
+        ">
+          ${score > 0 ? '+' : ''}
+          ${score}
+        </span>
+
+        <br><br>
+
+        <span style="
+          color:#dc2626;
+          font-weight:bold;
+        ">
+          เมื่อลบแล้ว
+          คะแนนของนักเรียนจะถูกคำนวณใหม่
+        </span>
+
+      </div>
+
+    `,
+
+    showCancelButton: true,
+
+    confirmButtonText:
+      '🗑️ ยืนยันลบ',
+
+    cancelButtonText:
+      'ยกเลิก',
+
+    confirmButtonColor:
+      '#dc2626',
+
+    reverseButtons: true
+
+  }).then(result => {
+
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    Swal.fire({
+
+      title:
+        'กำลังลบรายการ...',
+
+      allowOutsideClick:
+        false,
+
+      didOpen: () =>
+        Swal.showLoading()
+
+    });
+
+    google.script.run
+
+      .withSuccessHandler(
+        res => {
+
+          Swal.fire({
+
+            icon:
+              'success',
+
+            title:
+              'ลบรายการสำเร็จ',
+
+            text:
+              'คะแนนถูกคำนวณใหม่แล้ว',
+
+            timer:
+              1500,
+
+            showConfirmButton:
+              false
+
+          });
+
+          // โหลดใหม่จาก Google Sheet
+          loadDashboard();
+
+        }
+      )
+
+      .withFailureHandler(
+        showError
+      )
+
+      .deleteTransaction(
+        TOKEN,
+        transactionId
+      );
+
+  });
+
+}
+function showStudentHistory(studentKey) {
+  if (!CURRENT_USER || CURRENT_USER.role === 'teacher') {
+    Swal.fire('ไม่มีสิทธิ์เข้าถึง', 'ครูทั่วไปไม่สามารถดูประวัติรายการ', 'warning');
+    return;
+  }
+
+
+  const student =
+    STUDENTS.find(s => s.key === studentKey);
+
+  if (!student) {
+    Swal.fire(
+      'ไม่พบข้อมูล',
+      'ไม่พบนักเรียนที่เลือก',
+      'error'
+    );
+    return;
+  }
+
+  const list =
+    TRANSACTIONS
+      .filter(t => t.studentKey === studentKey)
+      .slice()
+      .reverse();
+
+  const current =
+    getStudentScore(studentKey);
+
+  const positive =
+    getStudentPositive(studentKey);
+
+  const negative =
+    getStudentNegative(studentKey);
+
+
+  let html = `
+
+    <div style="
+      text-align:left;
+      font-family:Sarabun,sans-serif;
+    ">
+
+      <div style="
+        background:#f8fafc;
+        border-radius:14px;
+        padding:15px;
+        margin-bottom:15px;
+      ">
+
+        <div>
+          <b>ชื่อ:</b>
+          ${escapeHtml(student.name)}
+        </div>
+
+        <div>
+          <b>รหัสนักเรียน:</b>
+          ${escapeHtml(student.studentId || '-')}
+        </div>
+
+        <div>
+          <b>ชั้น:</b>
+          ${escapeHtml(student.className)}
+        </div>
+
+        <div style="margin-top:8px">
+          <b>คะแนนคงเหลือ:</b>
+          <span style="
+            font-size:20px;
+            font-weight:bold;
+            color:${current <= 50 ? '#dc2626' : '#059669'};
+          ">
+            ${current}
+          </span>
+        </div>
+
+        <div>
+          <b>คะแนนเพิ่ม:</b>
+          <span style="color:#059669;font-weight:bold">
+            +${positive}
+          </span>
+        </div>
+
+        <div>
+          <b>คะแนนถูกตัด:</b>
+          <span style="color:#dc2626;font-weight:bold">
+            -${negative}
+          </span>
+        </div>
+
+      </div>
+
+      <div style="
+        font-size:18px;
+        font-weight:bold;
+        margin-bottom:10px;
+      ">
+        📋 ประวัติการทำรายการ
+      </div>
+
+  `;
+
+
+  if (!list.length) {
+
+    html += `
+      <div style="
+        text-align:center;
+        padding:25px;
+        color:#64748b;
+      ">
+        ยังไม่มีประวัติรายการ
+      </div>
+    `;
+
+  } else {
+
+    list.forEach(t => {
+
+      const score =
+        Number(t.score || 0);
+
+      const scoreColor =
+        score > 0
+          ? '#059669'
+          : '#dc2626';
+
+      const actionText =
+        score > 0
+          ? 'เพิ่มคะแนน'
+          : 'ตัดคะแนน';
+
+
+      // ชื่อผู้ทำรายการ
+      const recorder =
+        t.recorderName ||
+        t.username ||
+        'ไม่ระบุผู้บันทึก';
+
+
+      // Username
+      const recorderUsername =
+        t.username || '-';
+
+
+      // แปลง Role
+      let recorderRole = '';
+
+      if (t.recorderRole === 'admin') {
+        recorderRole = 'ผู้ดูแลระบบ';
+      }
+      else if (t.recorderRole === 'discipline') {
+        recorderRole = 'ครูฝ่ายปกครอง';
+      }
+      else if (t.recorderRole === 'teacher') {
+        recorderRole = 'ครูผู้สอน';
+      }
+      else {
+        recorderRole =
+          t.recorderRole || '-';
+      }
+
+
+      html += `
+
+        <div style="
+          border:1px solid #e2e8f0;
+          border-radius:14px;
+          padding:14px;
+          margin-bottom:12px;
+          background:#ffffff;
+        ">
+
+          <div style="
+            display:flex;
+            justify-content:space-between;
+            gap:10px;
+            align-items:center;
+          ">
+
+            <div style="font-weight:bold">
+              📅 ${escapeHtml(t.date)}
+            </div>
+
+            <div style="
+              color:${scoreColor};
+              font-size:20px;
+              font-weight:bold;
+            ">
+              ${score > 0 ? '+' : ''}${score}
+            </div>
+
+          </div>
+
+
+          <div style="
+            margin-top:7px;
+            font-size:16px;
+          ">
+            ${escapeHtml(t.reason)}
+          </div>
+
+
+          ${
+            t.note
+              ? `
+                <div style="
+                  margin-top:5px;
+                  color:#64748b;
+                  font-size:14px;
+                ">
+                  📝 หมายเหตุ:
+                  ${escapeHtml(t.note)}
+                </div>
+              `
+              : ''
+          }
+
+
+          <div style="
+            margin-top:10px;
+            padding-top:10px;
+            border-top:1px dashed #cbd5e1;
+            font-size:14px;
+            color:#475569;
+          ">
+
+            <div>
+              👤 <b>${actionText}โดย:</b>
+              ${escapeHtml(recorder)}
+            </div>
+
+            <div>
+              🔑 <b>Username:</b>
+              ${escapeHtml(recorderUsername)}
+            </div>
+
+            <div>
+              🛡️ <b>สิทธิ์:</b>
+              ${escapeHtml(recorderRole)}
+            </div>
+
+          </div>
+
+        </div>
+
+      `;
+
+    });
+
+  }
+
+
+  html += '</div>';
+
+
+  Swal.fire({
+
+    title: 'ประวัตินักเรียน',
+
+    html: html,
+
+    width: 760,
+
+    confirmButtonText: 'ปิด',
+
+    confirmButtonColor: '#6366f1'
+
+  });
+
+}
+
+
+/* =========================
+   SUMMARY
+========================= */
+
+function renderSummary() {
+
+  const positive =
+    TRANSACTIONS
+      .filter(t => Number(t.score) > 0)
+      .reduce((a,b) => a + Number(b.score), 0);
+
+  const negative =
+    TRANSACTIONS
+      .filter(t => Number(t.score) < 0)
+      .reduce((a,b) => a + Math.abs(Number(b.score)), 0);
+
+  document.getElementById('totalPositive').textContent =
+    '+' + positive;
+
+  document.getElementById('totalNegative').textContent =
+    '-' + negative;
+
+}
+
+
+/* =========================
+   CHART
+========================= */
+
+function populateChartClasses() {
+  const select = document.getElementById('chartClassFilter');
+  if (!select) return;
+  const previous = select.value;
+  const classes = [...new Set(STUDENTS.map(s => s.className).filter(Boolean))]
+    .sort((a,b) => a.localeCompare(b, 'th', {numeric: true}));
+  const scopedTeacher = CURRENT_USER && CURRENT_USER.role === 'teacher';
+  select.replaceChildren();
+  if (!scopedTeacher) select.add(new Option('ทุกห้องเรียน', ''));
+  classes.forEach(c => select.add(new Option(c,c)));
+  if (scopedTeacher) {
+    if (classes.length) select.value = classes[0];
+    select.disabled = true;
+  } else {
+    select.disabled = false;
+    if (classes.includes(previous)) select.value = previous;
+  }
+}
+
+function renderChart(list = STUDENTS) {
+
+  const chartFilter = document.getElementById('chartClassFilter');
+  const selectedClass = chartFilter ? chartFilter.value : '';
+  // กราฟเลือกห้องเรียนอย่างอิสระจากตารางรายชื่อ
+  list = STUDENTS.filter(s => !selectedClass || s.className === selectedClass);
+
+  const ctx =
+    document.getElementById('scoreChart');
+
+  const labels =
+    list.map(s => `${s.no} ${s.name}`);
+
+  const data =
+    list.map(s => getStudentScore(s.key));
+
+  if (SCORE_CHART) {
+    SCORE_CHART.destroy();
+  }
+
+  SCORE_CHART =
+    new Chart(ctx, {
+
+      type: 'bar',
+
+      data: {
+
+        labels,
+
+        datasets: [{
+
+          label: 'คะแนนคงเหลือ',
+
+          data,
+
+          borderWidth: 1
+
+        }]
+
+      },
+
+      options: {
+
+        responsive: true,
+
+        maintainAspectRatio: false,
+
+        scales: {
+
+          y: {
+
+            beginAtZero: true,
+
+            suggestedMax: 110
+
+          }
+
+        },
+
+        plugins: {
+
+          legend: {
+            display: true
+          }
+
+        }
+
+      }
+
+    });
+
+}
+
+
+/* =========================
+   USERS
+========================= */
+
+function createUser() {
+
+  const username =
+    document.getElementById('newUsername').value.trim();
+
+  const fullName =
+    document.getElementById('newFullName').value.trim();
+
+  const password =
+    document.getElementById('newPassword').value;
+
+  const role =
+    document.getElementById('newRole').value;
+
+  if (!username || !fullName || !password) {
+
+    Swal.fire({
+      icon: 'warning',
+      title: 'ข้อมูลไม่ครบ'
+    });
+
+    return;
+  }
+
+  google.script.run
+
+    .withSuccessHandler(res => {
+
+      USERS = res.users || [];
+
+      renderUsers();
+
+      document.getElementById('newUsername').value = '';
+
+      document.getElementById('newFullName').value = '';
+
+      document.getElementById('newPassword').value = '';
+
+      Swal.fire({
+        icon: 'success',
+        title: 'เพิ่มผู้ใช้สำเร็จ'
+      });
+
+    })
+
+    .withFailureHandler(showError)
+
+    .createUser(TOKEN, {
+
+      username,
+
+      fullName,
+
+      password,
+
+      role
+
+    });
+
+}
+
+
+function renderUsers() {
+
+  if (
+    !CURRENT_USER ||
+    CURRENT_USER.role !== 'admin'
+  ) {
+    return;
+  }
+
+
+  const teacherBody =
+    document.getElementById(
+      'teacherUserTableBody'
+    );
+
+  const studentBody =
+    document.getElementById(
+      'studentUserTableBody'
+    );
+
+
+  if (!teacherBody || !studentBody) {
+    return;
+  }
+
+
+  teacherBody.innerHTML = '';
+  studentBody.innerHTML = '';
+
+
+  USERS.forEach(u => {
+let createdAt = '-';
+
+if (u.createdAt) {
+  try {
+    createdAt = new Date(u.createdAt).toLocaleString('th-TH');
+  } catch (e) {
+    createdAt = u.createdAt;
+  }
+}
+    let lastLogin = '-';
+
+    if (u.lastLoginAt) {
+
+      try {
+
+        lastLogin =
+          new Date(
+            u.lastLoginAt
+          ).toLocaleString(
+            'th-TH'
+          );
+
+      } catch (e) {
+
+        lastLogin =
+          u.lastLoginAt;
+
+      }
+
+    }
+
+
+    // ==================================
+    // บัญชีนักเรียน
+    // ==================================
+
+    if (u.role === 'student') {
+
+      const tr =
+        document.createElement('tr');
+
+      tr.className =
+        'border-b hover:bg-indigo-50/50';
+
+
+      tr.innerHTML = `
+
+        <td class="p-3 font-medium">
+          ${escapeHtml(u.username || '-')}
+        </td>
+
+        <td class="p-3">
+          ${escapeHtml(u.fullName || '-')}
+        </td>
+
+        <td class="p-3">
+          ${escapeHtml(u.studentId || '-')}
+        </td>
+
+        <td class="p-3">
+          ${escapeHtml(u.className || '-')}
+        </td>
+
+        <td class="p-3 text-sm">
+          ${escapeHtml(lastLogin)}
+        </td>
+        <td class="p-3 text-sm">
+  ${escapeHtml(createdAt)}
+</td>
+
+        <td class="p-3 text-center">
+
+          ${
+            u.active
+              ? '🟢 ใช้งาน'
+              : '🔴 ระงับ'
+          }
+
+        </td>
+
+        <td class="p-3 text-center">
+
+          <div class="flex flex-wrap justify-center gap-2">
+
+            <button
+              onclick='adminResetPassword(
+                ${JSON.stringify(u.username)},
+                ${JSON.stringify(u.fullName)}
+              )'
+              class="
+                px-3 py-2
+                rounded-lg
+                bg-amber-50
+                text-amber-700
+                hover:bg-amber-100
+                font-medium
+              ">
+              🔑 เปลี่ยนรหัส
+            </button>
+
+            <button
+              onclick='adminDeleteUser(
+                ${JSON.stringify(u.username)},
+                ${JSON.stringify(u.fullName)}
+              )'
+              class="
+                px-3 py-2
+                rounded-lg
+                bg-red-50
+                text-red-600
+                hover:bg-red-100
+                font-medium
+              ">
+              🗑️ ลบบัญชี
+            </button>
+
+          </div>
+
+        </td>
+
+      `;
+
+      studentBody.appendChild(tr);
+
+      return;
+    }
+
+
+    // ==================================
+    // บัญชีครู / Admin / ฝ่ายปกครอง
+    // ==================================
+
+    const tr =
+      document.createElement('tr');
+
+    tr.className =
+      'border-b hover:bg-slate-50';
+
+
+    tr.innerHTML = `
+
+      <td class="p-3 font-medium">
+        ${escapeHtml(u.username || '-')}
+      </td>
+
+      <td class="p-3">
+        ${escapeHtml(u.fullName || '-')}
+      </td>
+
+      <td class="p-3">
+        ${escapeHtml(roleName(u.role))}
+      </td>
+
+      <td class="p-3 text-sm">
+        ${escapeHtml(lastLogin)}
+      </td>
+
+      <td class="p-3 text-center">
+
+        ${
+          u.active
+            ? '🟢 ใช้งาน'
+            : '🔴 ระงับ'
+        }
+
+      </td>
+
+      <td class="p-3 text-center">
+
+        <div class="flex flex-wrap justify-center gap-2">
+
+          <button
+            onclick='adminResetPassword(
+              ${JSON.stringify(u.username)},
+              ${JSON.stringify(u.fullName)}
+            )'
+            class="
+              px-3 py-2
+              rounded-lg
+              bg-amber-50
+              text-amber-700
+              hover:bg-amber-100
+              font-medium
+            ">
+            🔑 เปลี่ยนรหัส
+          </button>
+
+
+          ${
+            u.username !== 'admin'
+              ? `
+                <button
+                  onclick='adminDeleteUser(
+                    ${JSON.stringify(u.username)},
+                    ${JSON.stringify(u.fullName)}
+                  )'
+                  class="
+                    px-3 py-2
+                    rounded-lg
+                    bg-red-50
+                    text-red-600
+                    hover:bg-red-100
+                    font-medium
+                  ">
+                  🗑️ ลบบัญชี
+                </button>
+              `
+              : ''
+          }
+
+        </div>
+
+      </td>
+
+    `;
+
+
+    teacherBody.appendChild(tr);
+
+  });
+
+}
+function adminResetPassword(username, fullName) {
+
+  Swal.fire({
+
+    icon: 'question',
+
+    title: '🔑 เปลี่ยนรหัสผ่าน',
+
+    html: `
+      <div style="text-align:left;font-family:Sarabun,sans-serif;">
+
+        <div style="
+          background:#f8fafc;
+          padding:12px;
+          border-radius:10px;
+          margin-bottom:15px;
+        ">
+
+          <b>ชื่อ:</b>
+          ${escapeHtml(fullName || username)}
+          <br>
+
+          <b>Username:</b>
+          ${escapeHtml(username)}
+
+        </div>
+
+        <label style="
+          display:block;
+          margin-bottom:5px;
+          font-weight:600;
+        ">
+          รหัสผ่านใหม่
+        </label>
+
+        <input
+          id="adminNewPassword"
+          type="password"
+          class="swal2-input"
+          placeholder="อย่างน้อย 8 ตัวอักษร"
+          style="width:100%;margin:0 0 12px 0;"
+        >
+
+        <label style="
+          display:block;
+          margin-bottom:5px;
+          font-weight:600;
+        ">
+          ยืนยันรหัสผ่านใหม่
+        </label>
+
+        <input
+          id="adminConfirmPassword"
+          type="password"
+          class="swal2-input"
+          placeholder="กรอกรหัสผ่านอีกครั้ง"
+          style="width:100%;margin:0;"
+        >
+
+      </div>
+    `,
+
+    showCancelButton: true,
+
+    confirmButtonText: '💾 เปลี่ยนรหัสผ่าน',
+
+    cancelButtonText: 'ยกเลิก',
+
+    confirmButtonColor: '#d97706',
+
+    preConfirm: () => {
+
+      const password =
+        document
+          .getElementById('adminNewPassword')
+          .value;
+
+      const confirmPassword =
+        document
+          .getElementById('adminConfirmPassword')
+          .value;
+
+      if (password.length < 8) {
+
+        Swal.showValidationMessage(
+          'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'
+        );
+
+        return false;
+      }
+
+      if (password !== confirmPassword) {
+
+        Swal.showValidationMessage(
+          'รหัสผ่านทั้งสองช่องไม่ตรงกัน'
+        );
+
+        return false;
+      }
+
+      return password;
+    }
+
+  }).then(result => {
+
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    Swal.fire({
+      title: 'กำลังเปลี่ยนรหัสผ่าน...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    google.script.run
+
+      .withSuccessHandler(() => {
+
+        Swal.fire({
+          icon: 'success',
+          title: 'เปลี่ยนรหัสผ่านสำเร็จ',
+          text: 'ผู้ใช้สามารถเข้าสู่ระบบด้วยรหัสผ่านใหม่ได้แล้ว'
+        });
+
+      })
+
+      .withFailureHandler(showError)
+
+      .resetUserPassword(
+        TOKEN,
+        username,
+        result.value
+      );
+
+  });
+
+}
+function adminDeleteUser(username, fullName) {
+
+  Swal.fire({
+
+    icon: 'warning',
+
+    title: 'ยืนยันลบบัญชี?',
+
+    html: `
+      <div style="text-align:left;font-family:Sarabun,sans-serif;">
+
+        <b>ชื่อ:</b>
+        ${escapeHtml(fullName || '-')}
+        <br>
+
+        <b>Username:</b>
+        ${escapeHtml(username)}
+
+        <br><br>
+
+        <div style="
+          background:#fef2f2;
+          color:#b91c1c;
+          padding:12px;
+          border-radius:10px;
+        ">
+
+          การลบนี้จะลบเฉพาะ
+          <b>บัญชีเข้าสู่ระบบ</b>
+
+          <br>
+
+          ประวัติคะแนนความประพฤติเดิม
+          จะไม่ถูกลบ
+
+        </div>
+
+      </div>
+    `,
+
+    showCancelButton: true,
+
+    confirmButtonText: '🗑️ ยืนยันลบบัญชี',
+
+    cancelButtonText: 'ยกเลิก',
+
+    confirmButtonColor: '#dc2626',
+
+    reverseButtons: true
+
+  }).then(result => {
+
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    Swal.fire({
+      title: 'กำลังลบบัญชี...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    google.script.run
+
+      .withSuccessHandler(res => {
+
+        USERS = res.users || [];
+
+        renderUsers();
+
+        Swal.fire({
+          icon: 'success',
+          title: 'ลบบัญชีสำเร็จ',
+          text: 'ข้อมูลคะแนนเดิมยังคงอยู่'
+        });
+
+      })
+
+      .withFailureHandler(showError)
+
+      .deleteUser(
+        TOKEN,
+        username
+      );
+
+  });
+
+}
+/* =========================
+   EXPORT
+========================= */
+
+function getExportRows() {
+
+  const exportClass =
+    document.getElementById('exportClassFilter')
+      ? document.getElementById('exportClassFilter').value
+      : '';
+
+  let students =
+    STUDENTS.slice();
+
+  // ถ้าเลือกห้อง
+  // ให้เหลือเฉพาะนักเรียนห้องนั้น
+  if (exportClass) {
+
+    students =
+      students.filter(
+        s => s.className === exportClass
+      );
+
+  }
+
+  if (CURRENT_USER && CURRENT_USER.role === 'teacher') {
+    if (!CURRENT_USER.className) return [];
+    students = students.filter(s => s.className === CURRENT_USER.className);
+  }
+
+  return students.map(s => {
+
+    const current =
+      getStudentScore(s.key);
+
+    let status = '';
+
+    if (current >= 71) {
+      status = 'ปกติ';
+    } else if (current >= 51) {
+      status = 'เฝ้าระวัง';
+    } else {
+      status = 'เสี่ยง';
+    }
+
+    return {
+
+      เลขที่:
+        s.no,
+
+      รหัสนักเรียน:
+        s.studentId,
+
+      ระดับชั้น:
+        s.className,
+
+      ชื่อนักเรียน:
+        s.name,
+
+      คะแนนเพิ่ม:
+        getStudentPositive(s.key),
+
+      คะแนนถูกตัด:
+        getStudentNegative(s.key),
+
+      คะแนนคงเหลือ:
+        current,
+
+      สถานะ:
+        status
+
+    };
+
+  });
+
+}
+
+
+function downloadExcel() {
+
+  const rows =
+    getExportRows();
+
+  const ws =
+    XLSX.utils.json_to_sheet(rows);
+
+  const wb =
+    XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    ws,
+    'BehaviorScore'
+  );
+
+  XLSX.writeFile(
+    wb,
+    'behavior-score.xlsx'
+  );
+
+}
+
+
+function downloadCSV() {
+
+  const rows =
+    getExportRows();
+
+  const ws =
+    XLSX.utils.json_to_sheet(rows);
+
+  const csv =
+    XLSX.utils.sheet_to_csv(ws);
+
+  const blob =
+    new Blob(
+      ['\uFEFF' + csv],
+      {
+        type: 'text/csv;charset=utf-8;'
+      }
+    );
+
+  const url =
+    URL.createObjectURL(blob);
+
+  const a =
+    document.createElement('a');
+
+  a.href = url;
+
+  a.download =
+    'behavior-score.csv';
+
+  a.click();
+
+  URL.revokeObjectURL(url);
+
+}
+
+
+async function downloadPDF() {
+
+  const rows =
+    getExportRows();
+
+  const wrapper =
+    document.createElement('div');
+
+  wrapper.style.width = '1100px';
+
+  wrapper.style.padding = '30px';
+
+  wrapper.style.background = '#fff';
+
+  wrapper.innerHTML = `
+
+    <h2 style="font-size:24px;font-weight:bold;text-align:center;margin-bottom:20px">
+      รายงานคะแนนความประพฤติ
+    </h2>
+
+    <table style="width:100%;border-collapse:collapse;font-size:14px">
+
+      <thead>
+
+        <tr>
+
+          <th style="border:1px solid #ccc;padding:8px">เลขที่</th>
+
+          <th style="border:1px solid #ccc;padding:8px">ชื่อ</th>
+
+          <th style="border:1px solid #ccc;padding:8px">ชั้น</th>
+
+          <th style="border:1px solid #ccc;padding:8px">เพิ่ม</th>
+
+          <th style="border:1px solid #ccc;padding:8px">ตัด</th>
+
+          <th style="border:1px solid #ccc;padding:8px">คงเหลือ</th>
+
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        ${rows.map(r => `
+
+          <tr>
+
+            <td style="border:1px solid #ccc;padding:8px">
+              ${escapeHtml(r.เลขที่)}
+            </td>
+
+            <td style="border:1px solid #ccc;padding:8px">
+              ${escapeHtml(r.ชื่อนักเรียน)}
+            </td>
+
+            <td style="border:1px solid #ccc;padding:8px">
+              ${escapeHtml(r.ระดับชั้น)}
+            </td>
+
+            <td style="border:1px solid #ccc;padding:8px">
+              +${r.คะแนนเพิ่ม}
+            </td>
+
+            <td style="border:1px solid #ccc;padding:8px">
+              -${r.คะแนนถูกตัด}
+            </td>
+
+            <td style="border:1px solid #ccc;padding:8px">
+              ${r.คะแนนคงเหลือ}
+            </td>
+
+          </tr>
+
+        `).join('')}
+
+      </tbody>
+
+    </table>
+
+  `;
+
+  document.body.appendChild(wrapper);
+
+  const canvas =
+    await html2canvas(wrapper, {
+      scale: 2
+    });
+
+  wrapper.remove();
+
+  const imgData =
+    canvas.toDataURL('image/png');
+
+  const { jsPDF } =
+    window.jspdf;
+
+  const pdf =
+    new jsPDF(
+      'p',
+      'mm',
+      'a4'
+    );
+
+  const pageWidth =
+    210;
+
+  const pageHeight =
+    297;
+
+  const imgWidth =
+    190;
+
+  const imgHeight =
+    canvas.height * imgWidth / canvas.width;
+
+  let heightLeft =
+    imgHeight;
+
+  let position =
+    10;
+
+  pdf.addImage(
+    imgData,
+    'PNG',
+    10,
+    position,
+    imgWidth,
+    imgHeight
+  );
+
+  heightLeft -=
+    pageHeight - 20;
+
+  while (heightLeft > 0) {
+
+    position =
+      heightLeft - imgHeight + 10;
+
+    pdf.addPage();
+
+    pdf.addImage(
+      imgData,
+      'PNG',
+      10,
+      position,
+      imgWidth,
+      imgHeight
+    );
+
+    heightLeft -=
+      pageHeight - 20;
+
+  }
+
+  pdf.save(
+    'behavior-score.pdf'
+  );
+
+}
+
+
+/* =========================
+   UTILITIES
+========================= */
+
+function setToday() {
+
+  const input =
+    document.getElementById('recordDate');
+
+  if (!input.value) {
+
+    input.value =
+      new Date()
+        .toISOString()
+        .slice(0,10);
+
+  }
+
+}
+
+
+function showError(err) {
+
+  let message =
+    err && err.message
+      ? err.message
+      : String(err);
+
+  Swal.fire({
+    icon: 'error',
+    title: 'เกิดข้อผิดพลาด',
+    text: message
+  });
+
+}
+
+
+function escapeHtml(value) {
+
+  return String(value ?? '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+
+}
+
+
+/* =========================
+   ENTER LOGIN
+========================= */
+
+document
+  .getElementById('loginPassword')
+  .addEventListener(
+    'keydown',
+    e => {
+      if (e.key === 'Enter') {
+        login();
+      }
+    }
+  );
+
+
+/* ===== เพิ่มความสามารถผู้ดูแลระบบ / แสดงรหัสผ่าน ===== */
+function toggleLoginPassword() {
+  const input = document.getElementById('loginPassword');
+  const button = document.getElementById('loginPasswordToggle');
+  if (!input || !button) return;
+  const visible = input.type === 'password';
+  input.type = visible ? 'text' : 'password';
+  button.setAttribute('aria-label', visible ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน');
+  button.setAttribute('aria-pressed', String(visible));
+  const eye = document.getElementById('loginPasswordEye');
+  if (eye) {
+    eye.innerHTML = visible
+      ? '<path d="M4.7 4.7 19.3 19.3"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M6.7 6.7A10.7 10.7 0 0 0 2.1 12a10.75 10.75 0 0 0 17.7 3.6"/><path d="M9.8 2.2A10.8 10.8 0 0 1 21.9 12a11 11 0 0 1-1.6 2.8"/>'
+      : '<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>';
+  }
+}
+
+async function confirmResetAllStudentScores() {
+  if (!CURRENT_USER || CURRENT_USER.role !== 'admin') return;
+  const first = await Swal.fire({
+    icon: 'warning', title: 'รีเซ็ตคะแนนนักเรียนทุกคน?',
+    html: 'คะแนนทั้งหมดจะกลับเป็น <b>100</b> และประวัติรายการปัจจุบันจะถูกย้ายไปเก็บในชีตสำรองก่อนล้าง',
+    showCancelButton: true, confirmButtonText: 'ดำเนินการต่อ', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#b91c1c'
+  });
+  if (!first.isConfirmed) return;
+  const second = await Swal.fire({
+    title: 'ยืนยันครั้งสุดท้าย',
+    html: 'พิมพ์ <b>RESET ALL</b> เพื่อยืนยันการรีเซ็ตทั้งโรงเรียน',
+    input: 'text', inputPlaceholder: 'RESET ALL', showCancelButton: true,
+    confirmButtonText: 'สำรองและรีเซ็ต', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#b91c1c',
+    inputValidator: value => value === 'RESET ALL' ? undefined : 'กรุณาพิมพ์ RESET ALL ให้ตรง'
+  });
+  if (!second.isConfirmed) return;
+  Swal.fire({title: 'กำลังสำรองและรีเซ็ต', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+  google.script.run
+    .withSuccessHandler(res => {
+      Swal.fire({icon:'success',title:'รีเซ็ตสำเร็จ',text:`สำรองรายการ ${res.archivedCount} รายการ ในชีต ${res.backupSheet}`});
+      if (typeof loadDashboard === 'function') loadDashboard();
+    })
+    .withFailureHandler(showError)
+    .resetAllStudentScores(TOKEN, 'RESET ALL');
+}
+
+
+
+/* ===== โปรไฟล์ส่วนตัว ===== */
+let PROFILE_PHOTO_DATA = '';
+function openMyProfile() {
+  if (!TOKEN) return;
+  if (CURRENT_USER.role === 'student') {
+    document.getElementById('studentProfileOverlay').classList.remove('hidden');
+    loadMyProfile('studentProfileSlot');
+  } else { openAppPage('profile'); }
+}
+function closeStudentProfile() { document.getElementById('studentProfileOverlay').classList.add('hidden'); }
+
+function renderProfileForm(slot, data) {
+  PROFILE_PHOTO_DATA = '';
+
+  const otherId = slot === 'staffProfileSlot'
+    ? 'studentProfileSlot'
+    : 'staffProfileSlot';
+
+  const other = document.getElementById(otherId);
+  if (other) other.innerHTML = '';
+
+  const holder = document.getElementById(slot);
+  if (!holder) return;
+
+  holder.innerHTML = `
+    <div class="max-w-2xl mx-auto space-y-5">
+
+      <div class="text-center">
+        <div class="w-28 h-28 mx-auto rounded-full
+                    bg-indigo-100 overflow-hidden
+                    flex items-center justify-center
+                    border-4 border-white shadow">
+
+          <img id="profileImagePreview"
+               alt="รูปโปรไฟล์"
+               class="w-full h-full object-cover hidden">
+
+          <span id="profileAvatarPlaceholder"
+                class="text-5xl">👤</span>
+        </div>
+
+        <h3 id="profileUsername"
+            class="font-bold text-xl mt-3"></h3>
+
+        <p id="profileRoleText"
+           class="text-sm text-slate-500"></p>
+      </div>
+
+      <div class="bg-slate-50 rounded-2xl p-4">
+        <label class="font-semibold block mb-2">
+          📷 เปลี่ยนรูปโปรไฟล์
+        </label>
+
+        <input id="profilePhotoFile"
+               type="file"
+               accept="image/jpeg,image/png,image/webp"
+               onchange="handleProfilePhoto(event)"
+               class="w-full border bg-white rounded-xl p-3">
+
+        <p class="text-xs text-slate-500 mt-2">
+          รองรับ JPG, PNG, WebP ขนาดไม่เกิน 50 MB
+        </p>
+      </div>
+
+<!-- ช่องแก้ไขชื่อที่แสดงในระบบ -->
+<div>
+  <label for="profileDisplayName"
+         class="font-semibold block mb-2">
+    ชื่อที่แสดงในระบบ
+  </label>
+
+  <input
+    id="profileDisplayName"
+    type="text"
+    maxlength="100"
+    placeholder="กรอกชื่อ-นามสกุล"
+    class="w-full border rounded-xl px-4 py-3
+           focus:ring-2 focus:ring-indigo-400
+           outline-none">
+</div>
+
+      <div class="border-t pt-5 space-y-4">
+
+        <h3 class="font-bold text-lg">
+          🔐 เปลี่ยนรหัสผ่าน
+        </h3>
+
+        <p class="text-sm text-slate-500">
+          หากไม่ต้องการเปลี่ยนรหัสผ่าน
+          ให้เว้นช่องด้านล่างไว้
+        </p>
+
+        <div>
+          <label class="font-semibold block mb-2">
+            รหัสผ่านปัจจุบัน
+          </label>
+
+          <input id="profileOldPassword"
+                 type="password"
+                 autocomplete="current-password"
+                 class="w-full border rounded-xl px-4 py-3">
+        </div>
+
+        <div>
+          <label class="font-semibold block mb-2">
+            รหัสผ่านใหม่
+          </label>
+
+          <input id="profileNewPassword"
+                 type="password"
+                 autocomplete="new-password"
+                 placeholder="อย่างน้อย 8 ตัวอักษร"
+                 class="w-full border rounded-xl px-4 py-3">
+        </div>
+
+      </div>
+
+      <button type="button"
+              onclick="saveMyProfile()"
+              class="w-full gradient-btn text-white
+                     py-4 rounded-xl font-bold
+                     hover:opacity-90">
+        💾 บันทึกการเปลี่ยนแปลง
+      </button>
+
+      <p class="text-xs text-center text-slate-500">
+        ไม่สามารถเปลี่ยน Username สิทธิ์ผู้ใช้
+        หรือห้องประจำได้
+      </p>
+
+    </div>
+  `;
+
+  document.getElementById('profileUsername')
+    .textContent = data.username || '';
+
+  document.getElementById('profileRoleText')
+    .textContent =
+      (typeof roleName === 'function'
+        ? roleName(data.role)
+        : data.role) +
+      (data.className ? ' · ' + data.className : '');
+
+  document.getElementById('profileDisplayName')
+    .value = data.fullName || '';
+
+  if (data.photoData) {
+    const img = document.getElementById(
+      'profileImagePreview'
+    );
+
+    img.src = data.photoData;
+    img.classList.remove('hidden');
+
+    document.getElementById(
+      'profileAvatarPlaceholder'
+    ).classList.add('hidden');
+
+    setHeaderAvatar(data.photoData);
+  }
+}
+
+function setHeaderAvatar(photo) {
+  const studentAvatar = document.getElementById('studentHeaderAvatar');
+  if (studentAvatar && photo) { studentAvatar.src = photo; studentAvatar.classList.remove('hidden'); }
+  const icon = document.getElementById('currentUserIcon');
+  if (icon && photo) {
+    icon.textContent = '';
+    icon.style.backgroundImage = `url("${photo}")`;
+    icon.style.backgroundSize = 'cover';
+    icon.style.backgroundPosition = 'center';
+  }
+}
+function loadMyProfile(slot) {
+  google.script.run.withSuccessHandler(res => { renderProfileForm(slot,res); }).withFailureHandler(showError).getMyProfile(TOKEN);
+}
+function handleProfilePhoto(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  if (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 8000000) {
+    Swal.fire('รูปภาพไม่ถูกต้อง','เลือกไฟล์ภาพ JPG, PNG, WebP ขนาดไม่เกิน 50 MB','warning'); return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const size = 320;
+      const scale = Math.min(1,size/Math.max(img.width,img.height));
+      canvas.width = Math.max(1,Math.round(img.width*scale));
+      canvas.height = Math.max(1,Math.round(img.height*scale));
+      canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+      PROFILE_PHOTO_DATA = canvas.toDataURL('image/jpeg',0.78);
+      const preview = document.getElementById('profileImagePreview');
+      if (preview) { preview.src = PROFILE_PHOTO_DATA; preview.classList.remove('hidden'); }
+const placeholder = document.getElementById(
+  'profileAvatarPlaceholder'
+);
+
+if (placeholder) {
+  placeholder.classList.add('hidden');
+}
+
+    };
+    img.onerror = () => Swal.fire('ผิดพลาด','อ่านรูปภาพไม่สำเร็จ','error');
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+function saveMyProfile() {
+  const fullName = document.getElementById('profileDisplayName').value.trim();
+  const oldPassword = document.getElementById('profileOldPassword').value;
+  const newPassword = document.getElementById('profileNewPassword').value;
+  if (!fullName || fullName.length < 2) return Swal.fire('กรุณากรอกชื่อ','ต้องมีอย่างน้อย 2 ตัวอักษร','warning');
+  if (newPassword && (!oldPassword || newPassword.length < 8)) return Swal.fire('ตรวจสอบรหัสผ่าน','กรอกรหัสเดิมและรหัสใหม่อย่างน้อย 8 ตัวอักษร','warning');
+  Swal.fire({title:'กำลังบันทึกโปรไฟล์',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+  google.script.run.withSuccessHandler(res => {
+    CURRENT_USER.fullName = res.fullName;
+    const topName = document.getElementById('currentUserName');
+    if (topName) topName.textContent = res.fullName;
+    const studentName = document.getElementById('studentHeaderName');
+    if (studentName && CURRENT_USER.role === 'student') studentName.textContent = res.fullName;
+    if (PROFILE_PHOTO_DATA) setHeaderAvatar(PROFILE_PHOTO_DATA);
+    PROFILE_PHOTO_DATA = '';
+    Swal.fire('สำเร็จ','บันทึกข้อมูลโปรไฟล์แล้ว','success');
+  }).withFailureHandler(showError).updateMyProfile(TOKEN,{fullName,oldPassword,newPassword,photoData:PROFILE_PHOTO_DATA});
+}
+
+</script>
+
+</body>
+</html>
